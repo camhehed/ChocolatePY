@@ -2185,7 +2185,7 @@ runCode = async function() {
 const THEME_KEY = 'chocolatepy_theme';
 const THEME_PRESETS = [
     {
-        name: 'Grape (Default)',
+        name: 'Chocolate (Default)',
         colors: {
             '--grape': '#8B5A2B', '--grape-dark': '#6B3F1F', '--grape-deeper': '#553218',
             '--bg': '#FFFFFF', '--bg-side': '#F8F6FB', '--bg-title': '#4A1858',
@@ -3331,20 +3331,20 @@ cmds.push(
    FAKE VISITOR COUNTER (deterministic from date)
    ============================================================ */
 (function initVisitorCounter(){
-    /* Start: 453 MAU on Feb 12, 2026. Grow 85% over 6 months (~180 days) */
+    /* Start: 2 MAU on Feb 12, 2026. Grow 85% per month compounded */
     const START_DATE = new Date('2026-02-12').getTime();
-    const START_COUNT = 453;
-    const GROWTH = 0.85; /* 85% total over 6 months */
-    const PERIOD_DAYS = 180;
+    const START_COUNT = 2;
+    const MONTHLY_GROWTH = 0.85; /* 85% per month */
     function getMAU(){
         const now = Date.now();
         const days = Math.max(0, (now - START_DATE) / 86400000);
-        /* Compound growth: 85% over 180 days, applied daily */
-        const rate = Math.pow(1 + GROWTH, days / PERIOD_DAYS);
+        const months = days / 30.44; /* average days per month */
+        /* Compound growth: 85% each month */
+        const rate = Math.pow(1 + MONTHLY_GROWTH, months);
         /* Small deterministic daily jitter for realism (±2%) */
         const dayIdx = Math.floor(days);
         const jitter = 1 + 0.02 * Math.sin(dayIdx * 3.17);
-        return Math.round(START_COUNT * rate * jitter);
+        return Math.max(2, Math.round(START_COUNT * rate * jitter));
     }
     function fmt(n){
         if(n >= 1000) return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
