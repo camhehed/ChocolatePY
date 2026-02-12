@@ -218,12 +218,14 @@
             </div>
             <div class="b-body hidden" id="consoleBody"></div>
             <div class="b-body hidden" id="terminalBody">
-                <div class="cli-container">
-                    <div class="cli-output" id="cliOutput"><div class="cli-line cli-info">ChocolatePy Terminal — Python 3.11 (Pyodide)</div><div class="cli-line cli-info">Type Python code, shell-like commands, or <span style="color:var(--grape)">help</span> for a list of commands.</div><div class="cli-line cli-info">────────────────────────────────────────</div></div>
-                    <div class="cli-input-row">
-                        <span class="cli-prompt">&gt;&gt;&gt;</span>
-                        <input type="text" class="cli-input" id="cliInput" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="type python or a command...">
+                <div class="cli-container" id="cliContainer">
+                    <div class="cli-output" id="cliOutput"></div>
+                    <div class="cli-input-row" id="cliInputRow">
+                        <span class="cli-prompt" id="cliPrompt">&gt;&gt;&gt;</span>
+                        <input type="text" class="cli-input" id="cliInput" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="">
+                        <span class="cli-busy" id="cliBusy" style="display:none">⏳</span>
                     </div>
+                    <div class="cli-completions" id="cliCompletions" style="display:none"></div>
                 </div>
             </div>
         </div>
@@ -3363,244 +3365,456 @@ cmds.push(
 );
 
 /* ============================================================
-   CLI / TERMINAL
+   CLI / TERMINAL — v2 (proper REPL)
    ============================================================ */
-const cliHistory = [];
-let cliHistoryIdx = -1;
-let cliMultiLine = '';
-let cliMultiLineMode = false;
+const cli = {
+    history: [],
+    histIdx: -1,
+    histStash: '',       /* stash current input when browsing history */
+    buffer: '',          /* multi-line accumulator */
+    busy: false,
+    indent: 0,           /* auto-indent level */
+};
 
+/* ── Output helpers ─────────────────────────────────────── */
 function cliPrint(text, cls='cli-stdout') {
     const out = document.getElementById('cliOutput');
     const div = document.createElement('div');
     div.className = 'cli-line ' + cls;
     div.textContent = text;
     out.appendChild(div);
+    /* Keep scrollback reasonable */
+    while (out.children.length > 2000) out.removeChild(out.firstChild);
     out.scrollTop = out.scrollHeight;
 }
-
-function clearTerminal() {
+function cliPrintHTML(html, cls='cli-info') {
     const out = document.getElementById('cliOutput');
-    out.innerHTML = '<div class="cli-line cli-info">Terminal cleared.</div>';
+    const div = document.createElement('div');
+    div.className = 'cli-line ' + cls;
+    div.innerHTML = html;
+    out.appendChild(div);
+    out.scrollTop = out.scrollHeight;
+}
+function clearTerminal() {
+    document.getElementById('cliOutput').innerHTML = '';
+    cliPrint('Terminal cleared.', 'cli-info');
+}
+function cliWelcome() {
+    cliPrint('Python 3.11 (Pyodide) — ChocolatePy Terminal', 'cli-info');
+    cliPrint('Type Python code directly. Tab for completions. help() for commands.', 'cli-muted');
+    cliPrint('', 'cli-info');
+}
+cliWelcome();
+
+function cliSetPrompt(cont) {
+    document.getElementById('cliPrompt').textContent = cont ? '...' : '>>>';
+}
+function cliSetBusy(b) {
+    cli.busy = b;
+    document.getElementById('cliBusy').style.display = b ? '' : 'none';
+    document.getElementById('cliInput').disabled = b;
 }
 
-function cliSetPrompt(multi) {
-    document.querySelector('.cli-prompt').textContent = multi ? '...' : '>>>';
-}
-
-/* Shell-like built-in commands */
-const CLI_COMMANDS = {
-    help: () => {
-        cliPrint('Available commands:', 'cli-info');
-        cliPrint('  help          — show this help', 'cli-info');
-        cliPrint('  clear         — clear the terminal', 'cli-info');
-        cliPrint('  ls / files    — list project files', 'cli-info');
-        cliPrint('  cat <file>    — show file contents', 'cli-info');
-        cliPrint('  run           — run the current editor file', 'cli-info');
-        cliPrint('  run <file>    — run a specific file', 'cli-info');
-        cliPrint('  pip install <pkg> — install a Python package', 'cli-info');
-        cliPrint('  pip list      — list installed packages', 'cli-info');
-        cliPrint('  pwd           — show current "directory"', 'cli-info');
-        cliPrint('  echo <text>   — print text', 'cli-info');
-        cliPrint('  whoami        — about this IDE', 'cli-info');
-        cliPrint('  python <code> — run inline python', 'cli-info');
-        cliPrint('', 'cli-info');
-        cliPrint('Or type any Python code directly.', 'cli-info');
-    },
-    clear: () => clearTerminal(),
-    ls: () => {
-        const names = Object.keys(files);
-        if (names.length === 0) { cliPrint('(no files)', 'cli-info'); return; }
-        names.forEach(f => cliPrint('  ' + f, 'cli-stdout'));
-    },
-    files: function() { CLI_COMMANDS.ls(); },
-    pwd: () => cliPrint('/chocolatepy/', 'cli-stdout'),
-    whoami: () => cliPrint('ChocolatePy v2.0 — Browser Python IDE (Pyodide/WebAssembly)', 'cli-info'),
-};
-
-async function cliExecPython(code) {
-    if (!pyodide) { cliPrint('Python not loaded yet. Please wait...', 'cli-error'); return; }
-    try {
-        pyodide.runPython('import sys\nfrom io import StringIO\nsys.stdout=StringIO()\nsys.stderr=StringIO()');
-        await pyodide.runPythonAsync(code);
-        const stdout = pyodide.runPython('sys.stdout.getvalue()');
-        const stderr = pyodide.runPython('sys.stderr.getvalue()');
-        if (stdout) stdout.split('\n').forEach(l => { if (l !== '') cliPrint(l, 'cli-stdout'); });
-        if (stderr) stderr.split('\n').forEach(l => { if (l !== '') cliPrint(l, 'cli-error'); });
-        /* If the code is a single expression, try to show its repr */
-        if (!stdout && !stderr) {
-            try {
-                const result = pyodide.runPython('repr(' + code.trim() + ')');
-                if (result && result !== 'None') cliPrint(result, 'cli-result');
-            } catch(e) { /* not an expression, that's fine */ }
+/* ── Detect if input needs continuation ──────────────────── */
+function cliNeedsContinuation(code) {
+    /* count open brackets/parens/braces */
+    let opens = 0;
+    let inStr = false, strCh = '';
+    for (let i = 0; i < code.length; i++) {
+        const c = code[i];
+        if (inStr) {
+            if (c === '\\') { i++; continue; }
+            if (c === strCh) inStr = false;
+            continue;
         }
+        if (c === '"' || c === "'") { inStr = true; strCh = c; continue; }
+        if (c === '#') break; /* rest is comment */
+        if ('([{'.includes(c)) opens++;
+        if (')]}'.includes(c)) opens--;
+    }
+    if (opens > 0) return true;
+    if (inStr) return true;
+    /* line ends with : or \ (block start or continuation) */
+    const trimmed = code.replace(/#.*$/gm, '').trimEnd();
+    const lastLine = trimmed.split('\n').pop().trimEnd();
+    if (lastLine.endsWith(':') || lastLine.endsWith('\\')) return true;
+    return false;
+}
+
+/* ── Python execution ────────────────────────────────────── */
+async function cliExecPython(code) {
+    if (!pyodide) { cliPrint('⏳ Python still loading...', 'cli-error'); return; }
+    cliSetBusy(true);
+    try {
+        /* Redirect stdout/stderr */
+        pyodide.runPython(`import sys as _sys\nfrom io import StringIO as _SIO\n_sys.stdout=_SIO()\n_sys.stderr=_SIO()`);
+
+        /* Try compiling as eval (expression) first, then exec (statement) */
+        let isExpr = false;
+        try {
+            pyodide.runPython(`compile(${JSON.stringify(code.trim())}, '<cli>', 'eval')`);
+            isExpr = true;
+        } catch(e) { isExpr = false; }
+
+        let result = undefined;
+        if (isExpr) {
+            /* Single expression — eval and show result */
+            await pyodide.runPythonAsync(`_cli_result_ = eval(${JSON.stringify(code.trim())})`);
+            result = pyodide.runPython(`repr(_cli_result_) if _cli_result_ is not None else None`);
+        } else {
+            /* Statement(s) — exec */
+            await pyodide.runPythonAsync(code);
+        }
+
+        const stdout = pyodide.runPython('_sys.stdout.getvalue()');
+        const stderr = pyodide.runPython('_sys.stderr.getvalue()');
+
+        if (stdout) {
+            const lines = stdout.split('\n');
+            for (let i = 0; i < Math.min(lines.length, 3000); i++) {
+                if (lines[i] !== '' || i < lines.length - 1) cliPrint(lines[i], 'cli-stdout');
+            }
+            if (lines.length > 3000) cliPrint(`... (${lines.length - 3000} more lines)`, 'cli-muted');
+        }
+        if (stderr) stderr.split('\n').forEach(l => { if (l) cliPrint(l, 'cli-error'); });
+        if (isExpr && result && result !== 'None') cliPrint(result, 'cli-result');
+
     } catch(e) {
-        const msg = (e.message || String(e)).split('\n');
-        msg.forEach(l => { if (l) cliPrint(l, 'cli-error'); });
+        /* Clean up Pyodide's verbose traceback — show the useful part */
+        const msg = (e.message || String(e));
+        const lines = msg.split('\n');
+        /* Find the last "File" line and error message */
+        let cleaned = [];
+        let foundFile = false;
+        for (let i = lines.length - 1; i >= 0; i--) {
+            const l = lines[i].trim();
+            if (l && !foundFile) cleaned.unshift(l);
+            if (l.startsWith('File "<')) { foundFile = true; cleaned.unshift(l); break; }
+        }
+        if (cleaned.length === 0) cleaned = lines.filter(l => l.trim());
+        cleaned.forEach(l => cliPrint(l, 'cli-error'));
     } finally {
-        try { pyodide.runPython('sys.stdout=sys.__stdout__\nsys.stderr=sys.__stderr__'); } catch(e) {}
+        try { pyodide.runPython('_sys.stdout=_sys.__stdout__\n_sys.stderr=_sys.__stderr__'); } catch(e) {}
+        cliSetBusy(false);
     }
 }
 
+/* ── Tab completion ──────────────────────────────────────── */
+const PY_KEYWORDS = ['False','None','True','and','as','assert','async','await','break','class','continue','def','del','elif','else','except','finally','for','from','global','if','import','in','is','lambda','nonlocal','not','or','pass','raise','return','try','while','with','yield'];
+const PY_BUILTINS = ['abs','all','any','bin','bool','bytearray','bytes','callable','chr','classmethod','compile','complex','delattr','dict','dir','divmod','enumerate','eval','exec','filter','float','format','frozenset','getattr','globals','hasattr','hash','help','hex','id','input','int','isinstance','issubclass','iter','len','list','locals','map','max','memoryview','min','next','object','oct','open','ord','pow','print','property','range','repr','reversed','round','set','setattr','slice','sorted','staticmethod','str','sum','super','tuple','type','vars','zip'];
+const CLI_CMD_NAMES = ['help','clear','ls','cat','run','pip','echo','reset'];
+
+function cliGetCompletions(text) {
+    if (!text) return [];
+    const word = text.match(/[a-zA-Z_.][\w.]*$/);
+    if (!word) return [];
+    const prefix = word[0].toLowerCase();
+    const results = [];
+
+    /* Python keywords + builtins */
+    PY_KEYWORDS.forEach(k => { if (k.toLowerCase().startsWith(prefix)) results.push(k); });
+    PY_BUILTINS.forEach(k => { if (k.toLowerCase().startsWith(prefix)) results.push(k); });
+
+    /* CLI commands (only at start of line) */
+    if (text.trim() === word[0]) {
+        CLI_CMD_NAMES.forEach(k => { if (k.startsWith(prefix)) results.push(k); });
+    }
+
+    /* User's Python globals */
+    if (pyodide) {
+        try {
+            const globals = pyodide.runPython(`[k for k in dir() if not k.startswith('_') and k.lower().startswith(${JSON.stringify(prefix)})]`);
+            const arr = globals.toJs();
+            arr.forEach(k => { if (!results.includes(k)) results.push(k); });
+        } catch(e) {}
+    }
+
+    /* File names (for cat/run) */
+    if (/^(cat|run)\s/.test(text)) {
+        Object.keys(files).forEach(f => { if (f.toLowerCase().startsWith(prefix)) results.push(f); });
+    }
+
+    return results.slice(0, 12); /* cap at 12 */
+}
+
+/* ── Shell-like commands ─────────────────────────────────── */
+async function cliShellCmd(input) {
+    const parts = input.split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+
+    switch(cmd) {
+        case 'help':
+            cliPrint('Commands:', 'cli-info');
+            cliPrint('  clear       clear the terminal', 'cli-muted');
+            cliPrint('  ls          list project files', 'cli-muted');
+            cliPrint('  cat <file>  print file contents', 'cli-muted');
+            cliPrint('  run [file]  run current or named file', 'cli-muted');
+            cliPrint('  pip install <pkg>  install a package', 'cli-muted');
+            cliPrint('  pip list    show installed packages', 'cli-muted');
+            cliPrint('  echo <text> print text', 'cli-muted');
+            cliPrint('  reset       reset Python state', 'cli-muted');
+            cliPrint('  clear       clear terminal', 'cli-muted');
+            cliPrint('', 'cli-info');
+            cliPrint('Everything else is evaluated as Python.', 'cli-muted');
+            return true;
+
+        case 'clear':
+            clearTerminal();
+            return true;
+
+        case 'ls': case 'files':
+            const names = Object.keys(files);
+            if (!names.length) { cliPrint('(no files)', 'cli-muted'); return true; }
+            names.forEach(f => {
+                const active = f === activeFile ? ' ← editing' : '';
+                cliPrint('  ' + f + active, active ? 'cli-result' : 'cli-stdout');
+            });
+            return true;
+
+        case 'cat':
+            if (!parts[1]) { cliPrint('Usage: cat <filename>', 'cli-muted'); return true; }
+            const fname = parts.slice(1).join(' ');
+            if (files[fname]) {
+                files[fname].split('\n').forEach(l => cliPrint(l, 'cli-stdout'));
+            } else {
+                cliPrint('not found: ' + fname, 'cli-error');
+                cliPrint('files: ' + Object.keys(files).join(', '), 'cli-muted');
+            }
+            return true;
+
+        case 'echo':
+            cliPrint(parts.slice(1).join(' '), 'cli-stdout');
+            return true;
+
+        case 'run':
+            if (parts[1]) {
+                const fn = parts.slice(1).join(' ');
+                if (!files[fn]) { cliPrint('not found: ' + fn, 'cli-error'); return true; }
+                cliPrint('running ' + fn + '...', 'cli-muted');
+                await cliExecPython(files[fn]);
+            } else {
+                cliPrint('running ' + activeFile + '...', 'cli-muted');
+                await cliExecPython(editor.getValue());
+            }
+            return true;
+
+        case 'reset':
+            if (!pyodide) { cliPrint('Python not loaded.', 'cli-error'); return true; }
+            try {
+                pyodide.runPython(`
+for _k in list(globals().keys()):
+    if not _k.startswith('_') and _k not in ('sys','builtins'):
+        try: del globals()[_k]
+        except: pass
+`);
+                cliPrint('Python state reset.', 'cli-info');
+            } catch(e) { cliPrint('Reset failed: ' + e.message, 'cli-error'); }
+            return true;
+
+        case 'pip': case '!pip':
+            const sub = parts[1];
+            if (sub === 'install' && parts[2]) {
+                if (!pyodide) { cliPrint('Python not loaded.', 'cli-error'); return true; }
+                for (const pkg of parts.slice(2)) {
+                    cliPrint('installing ' + pkg + '...', 'cli-muted');
+                    try {
+                        await pyodide.runPythonAsync(`import micropip; await micropip.install('${pkg.replace(/'/g, "\\'")}')`);
+                        cliPrint('✓ ' + pkg, 'cli-success');
+                    } catch(e) {
+                        cliPrint('✗ ' + pkg + ': ' + (e.message||e).split('\n').pop(), 'cli-error');
+                    }
+                }
+                return true;
+            }
+            if (sub === 'list') {
+                if (!pyodide) { cliPrint('Python not loaded.', 'cli-error'); return true; }
+                try {
+                    const r = pyodide.runPython(`import micropip\n'\\n'.join(sorted(f'{d.name} {d.version}' for d in micropip.list()))`);
+                    if (r) r.split('\n').forEach(l => cliPrint('  ' + l, 'cli-stdout'));
+                    else cliPrint('(none installed)', 'cli-muted');
+                } catch(e) { cliPrint('micropip unavailable', 'cli-error'); }
+                return true;
+            }
+            cliPrint('pip install <pkg> | pip list', 'cli-muted');
+            return true;
+    }
+    return false; /* not a shell command */
+}
+
+/* ── Main dispatch ───────────────────────────────────────── */
 async function cliExec(raw) {
-    const input = raw.trim();
-    if (!input) return;
+    const trimmed = raw.trim();
 
-    /* Add to history */
-    cliHistory.push(raw);
-    cliHistoryIdx = cliHistory.length;
+    /* Add to history (skip dupes and empty) */
+    if (trimmed && (cli.history.length === 0 || cli.history[cli.history.length-1] !== raw)) {
+        cli.history.push(raw);
+    }
+    cli.histIdx = cli.history.length;
+    cli.histStash = '';
 
-    /* Echo the command */
-    cliPrint((cliMultiLineMode ? '... ' : '>>> ') + raw, 'cli-echo');
+    /* Echo input */
+    cliPrint((cli.buffer ? '... ' : '>>> ') + raw, 'cli-echo');
 
-    /* Multi-line mode: collect lines ending with : or in the middle of a block */
-    if (cliMultiLineMode) {
-        if (input === '') {
-            /* Empty line ends multi-line block */
-            cliMultiLineMode = false;
+    /* Multi-line continuation */
+    if (cli.buffer) {
+        if (trimmed === '') {
+            /* Empty line = run the block */
+            const code = cli.buffer;
+            cli.buffer = '';
+            cli.indent = 0;
             cliSetPrompt(false);
-            const code = cliMultiLine;
-            cliMultiLine = '';
             await cliExecPython(code);
-            return;
+        } else {
+            cli.buffer += raw + '\n';
+            /* Calculate indent for next line */
+            const lastLine = raw.replace(/#.*$/, '').trimEnd();
+            if (lastLine.endsWith(':')) cli.indent += 4;
+            else if (/^\s*(return|break|continue|pass|raise)\b/.test(raw)) {
+                cli.indent = Math.max(0, cli.indent - 4);
+            }
         }
-        cliMultiLine += raw + '\n';
         return;
     }
 
-    /* Check if this starts a multi-line block (ends with :) */
-    const trimmed = input.replace(/#.*$/, '').trimEnd();
-    if (trimmed.endsWith(':') || trimmed.endsWith('\\')) {
-        cliMultiLineMode = true;
-        cliMultiLine = raw + '\n';
+    /* Check if it's a shell command */
+    if (trimmed && await cliShellCmd(trimmed)) return;
+
+    /* Empty input — just skip */
+    if (!trimmed) return;
+
+    /* Check if this needs continuation lines */
+    if (cliNeedsContinuation(raw)) {
+        cli.buffer = raw + '\n';
+        const lastLine = raw.replace(/#.*$/, '').trimEnd();
+        cli.indent = lastLine.endsWith(':') ? 4 : 0;
+        /* Compute base indent from current line */
+        const match = raw.match(/^(\s*)/);
+        if (match) cli.indent += match[1].length;
+        if (lastLine.endsWith(':')) cli.indent = (match ? match[1].length : 0) + 4;
         cliSetPrompt(true);
         return;
     }
 
-    /* Shell-like commands */
-    const parts = input.split(/\s+/);
-    const cmd = parts[0].toLowerCase();
-
-    if (CLI_COMMANDS[cmd]) {
-        CLI_COMMANDS[cmd]();
-        return;
-    }
-
-    /* cat <file> */
-    if (cmd === 'cat' && parts[1]) {
-        const fname = parts.slice(1).join(' ');
-        if (files[fname]) {
-            files[fname].split('\n').forEach(l => cliPrint(l, 'cli-stdout'));
-        } else {
-            cliPrint('File not found: ' + fname, 'cli-error');
-        }
-        return;
-    }
-
-    /* echo */
-    if (cmd === 'echo') {
-        cliPrint(parts.slice(1).join(' '), 'cli-stdout');
-        return;
-    }
-
-    /* run [file] */
-    if (cmd === 'run') {
-        if (parts[1]) {
-            const fname = parts.slice(1).join(' ');
-            if (files[fname]) {
-                cliPrint('Running ' + fname + '...', 'cli-info');
-                await cliExecPython(files[fname]);
-            } else {
-                cliPrint('File not found: ' + fname, 'cli-error');
-            }
-        } else {
-            cliPrint('Running ' + activeFile + '...', 'cli-info');
-            await cliExecPython(editor.getValue());
-        }
-        return;
-    }
-
-    /* pip install / pip list */
-    if (cmd === 'pip' || cmd === '!pip') {
-        const sub = parts[1];
-        if (sub === 'install' && parts[2]) {
-            const pkgs = parts.slice(2);
-            if (!pyodide) { cliPrint('Python not loaded yet.', 'cli-error'); return; }
-            for (const pkg of pkgs) {
-                cliPrint('Installing ' + pkg + '...', 'cli-info');
-                try {
-                    await pyodide.runPythonAsync(`import micropip; await micropip.install('${pkg}')`);
-                    cliPrint('✓ ' + pkg + ' installed successfully', 'cli-success');
-                } catch(e) {
-                    cliPrint('✗ Failed to install ' + pkg + ': ' + (e.message || e), 'cli-error');
-                }
-            }
-            return;
-        }
-        if (sub === 'list') {
-            if (!pyodide) { cliPrint('Python not loaded yet.', 'cli-error'); return; }
-            try {
-                const result = pyodide.runPython(`import micropip; '\\n'.join(f'{d.name}=={d.version}' for d in micropip.list())`);
-                if (result) result.split('\n').forEach(l => cliPrint('  ' + l, 'cli-stdout'));
-                else cliPrint('No packages installed via pip.', 'cli-info');
-            } catch(e) { cliPrint('micropip not available.', 'cli-error'); }
-            return;
-        }
-        cliPrint('Usage: pip install <package> | pip list', 'cli-info');
-        return;
-    }
-
-    /* python -c <code> or python <inline> */
-    if (cmd === 'python' || cmd === 'python3') {
-        if (parts[1] === '-c' && parts[2]) {
-            await cliExecPython(parts.slice(2).join(' '));
-        } else if (parts[1]) {
-            await cliExecPython(parts.slice(1).join(' '));
-        } else {
-            cliPrint('Interactive mode — type Python code directly.', 'cli-info');
-        }
-        return;
-    }
-
-    /* Default: treat as Python code */
-    await cliExecPython(input);
+    /* Single-line Python */
+    await cliExecPython(trimmed);
 }
 
-/* CLI input handler */
-document.getElementById('cliInput').addEventListener('keydown', async function(e) {
+/* ── Input handler ───────────────────────────────────────── */
+const cliInputEl = document.getElementById('cliInput');
+let cliCompVisible = false;
+
+cliInputEl.addEventListener('keydown', async function(e) {
+    /* Hide completions on most keys */
+    if (e.key !== 'Tab') {
+        document.getElementById('cliCompletions').style.display = 'none';
+        cliCompVisible = false;
+    }
+
     if (e.key === 'Enter') {
         e.preventDefault();
+        if (cli.busy) return;
         const val = this.value;
         this.value = '';
         await cliExec(val);
-    } else if (e.key === 'ArrowUp') {
+        /* Auto-indent in multi-line mode */
+        if (cli.buffer) this.value = ' '.repeat(cli.indent);
+        return;
+    }
+
+    if (e.key === 'ArrowUp') {
         e.preventDefault();
-        if (cliHistoryIdx > 0) {
-            cliHistoryIdx--;
-            this.value = cliHistory[cliHistoryIdx] || '';
+        if (cli.histIdx === cli.history.length) cli.histStash = this.value;
+        if (cli.histIdx > 0) {
+            cli.histIdx--;
+            this.value = cli.history[cli.histIdx];
+            setTimeout(() => { this.selectionStart = this.selectionEnd = this.value.length; }, 0);
         }
-    } else if (e.key === 'ArrowDown') {
+        return;
+    }
+
+    if (e.key === 'ArrowDown') {
         e.preventDefault();
-        if (cliHistoryIdx < cliHistory.length - 1) {
-            cliHistoryIdx++;
-            this.value = cliHistory[cliHistoryIdx] || '';
+        if (cli.histIdx < cli.history.length - 1) {
+            cli.histIdx++;
+            this.value = cli.history[cli.histIdx];
         } else {
-            cliHistoryIdx = cliHistory.length;
-            this.value = '';
+            cli.histIdx = cli.history.length;
+            this.value = cli.histStash;
         }
-    } else if (e.key === 'c' && e.ctrlKey) {
-        /* Ctrl+C: cancel multi-line */
-        if (cliMultiLineMode) {
+        return;
+    }
+
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        const comps = cliGetCompletions(this.value);
+        if (comps.length === 1) {
+            /* Single match — auto-complete */
+            const word = this.value.match(/[a-zA-Z_.][\w.]*$/);
+            if (word) {
+                this.value = this.value.slice(0, this.value.length - word[0].length) + comps[0];
+            }
+        } else if (comps.length > 1) {
+            /* Show completion menu */
+            const menu = document.getElementById('cliCompletions');
+            menu.innerHTML = comps.map(c => `<span class="cli-comp-item">${c}</span>`).join('');
+            menu.style.display = 'flex';
+            cliCompVisible = true;
+            /* Click to complete */
+            menu.querySelectorAll('.cli-comp-item').forEach(el => {
+                el.onclick = () => {
+                    const word = cliInputEl.value.match(/[a-zA-Z_.][\w.]*$/);
+                    if (word) cliInputEl.value = cliInputEl.value.slice(0, cliInputEl.value.length - word[0].length) + el.textContent;
+                    menu.style.display = 'none';
+                    cliInputEl.focus();
+                };
+            });
+        }
+        return;
+    }
+
+    if (e.key === 'c' && e.ctrlKey) {
+        if (cli.buffer || cli.busy) {
             e.preventDefault();
-            cliMultiLineMode = false;
-            cliMultiLine = '';
+            cli.buffer = '';
+            cli.indent = 0;
             cliSetPrompt(false);
-            cliPrint('^C', 'cli-error');
+            cliPrint('^C KeyboardInterrupt', 'cli-error');
+            this.value = '';
+            if (cli.busy) {
+                try { pyodide.interruptExecution(); } catch(ex) {}
+                cliSetBusy(false);
+            }
         }
-    } else if (e.key === 'l' && e.ctrlKey) {
+        return;
+    }
+
+    if (e.key === 'l' && e.ctrlKey) {
         e.preventDefault();
         clearTerminal();
+        return;
     }
+});
+
+/* Paste multi-line: detect and auto-submit as a block */
+cliInputEl.addEventListener('paste', function(e) {
+    const paste = (e.clipboardData || window.clipboardData).getData('text');
+    if (paste && paste.includes('\n')) {
+        e.preventDefault();
+        const lines = paste.split('\n');
+        /* Feed each line through the CLI */
+        (async () => {
+            for (const line of lines) {
+                await cliExec(line);
+            }
+            /* If still in multi-line mode, finish it */
+            if (cli.buffer) await cliExec('');
+        })();
+    }
+});
+
+/* Click on output to focus input */
+document.getElementById('cliOutput').addEventListener('click', () => {
+    if (!window.getSelection().toString()) cliInputEl.focus();
 });
 
 /* ============================================================

@@ -895,8 +895,7 @@ button:focus-visible {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #1a1a2e;
-    border-radius: 0;
+    background: var(--bg-dark, var(--bg));
     overflow: hidden;
 }
 .cli-output {
@@ -906,9 +905,9 @@ button:focus-visible {
     font-family: var(--mono);
     font-size: 12.5px;
     line-height: 1.65;
-    color: #d4d4d4;
+    color: var(--text);
     scrollbar-width: thin;
-    scrollbar-color: #444 transparent;
+    scrollbar-color: var(--border) transparent;
 }
 .cli-line {
     white-space: pre-wrap;
@@ -917,38 +916,29 @@ button:focus-visible {
     margin: 0;
     animation: fadeIn 0.08s ease-out;
 }
-.cli-echo {
-    color: #888;
-}
-.cli-stdout {
-    color: #d4d4d4;
-}
-.cli-result {
-    color: #7ec8e3;
-}
-.cli-error {
-    color: #f47067;
-}
-.cli-success {
-    color: #3fb950;
-}
-.cli-info {
-    color: #8b949e;
-}
+.cli-echo    { color: var(--text-2); }
+.cli-stdout  { color: var(--text); }
+.cli-result  { color: var(--accent, var(--grape-soft)); }
+.cli-error   { color: var(--err); }
+.cli-success { color: var(--ok, #3fb950); }
+.cli-info    { color: var(--text-2); }
+.cli-muted   { color: var(--text-2); opacity: 0.65; }
+
 .cli-input-row {
     display: flex;
     align-items: center;
     padding: 6px 12px;
-    background: #141425;
-    border-top: 1px solid #2a2a3e;
+    background: var(--bg-darker, var(--bg-dark, var(--bg)));
+    border-top: 1px solid var(--border);
     flex-shrink: 0;
+    gap: 4px;
 }
 .cli-prompt {
     font-family: var(--mono);
     font-size: 13px;
     font-weight: 600;
     color: var(--grape-soft, #C4935A);
-    margin-right: 8px;
+    margin-right: 6px;
     flex-shrink: 0;
     user-select: none;
 }
@@ -959,14 +949,53 @@ button:focus-visible {
     outline: none;
     font-family: var(--mono);
     font-size: 12.5px;
-    color: #e6e6e6;
+    color: var(--text);
     caret-color: var(--grape-soft, #C4935A);
     padding: 0;
     line-height: 1.5;
 }
 .cli-input::placeholder {
-    color: #555;
+    color: var(--text-2);
+    opacity: 0.4;
     font-size: 11px;
+}
+.cli-input:disabled {
+    opacity: 0.5;
+}
+.cli-busy {
+    font-size: 14px;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* Completions panel */
+.cli-completions {
+    display: none;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 12px;
+    background: var(--bg-dark, var(--bg));
+    border-top: 1px solid var(--border);
+}
+.cli-comp-item {
+    display: inline-block;
+    padding: 2px 8px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+}
+.cli-comp-item:hover {
+    background: var(--grape-soft);
+    color: #fff;
 }
 
 /* Terminal body needs no padding since cli-container handles it */
