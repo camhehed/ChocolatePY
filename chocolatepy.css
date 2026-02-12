@@ -889,6 +889,95 @@ button:focus-visible {
 .d-line.info  { color: var(--text-2); }
 
 /* ================================================================
+   CLI / TERMINAL
+   ================================================================ */
+.cli-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #1a1a2e;
+    border-radius: 0;
+    overflow: hidden;
+}
+.cli-output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: #d4d4d4;
+    scrollbar-width: thin;
+    scrollbar-color: #444 transparent;
+}
+.cli-line {
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding: 0;
+    margin: 0;
+    animation: fadeIn 0.08s ease-out;
+}
+.cli-echo {
+    color: #888;
+}
+.cli-stdout {
+    color: #d4d4d4;
+}
+.cli-result {
+    color: #7ec8e3;
+}
+.cli-error {
+    color: #f47067;
+}
+.cli-success {
+    color: #3fb950;
+}
+.cli-info {
+    color: #8b949e;
+}
+.cli-input-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: #141425;
+    border-top: 1px solid #2a2a3e;
+    flex-shrink: 0;
+}
+.cli-prompt {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grape-soft, #C4935A);
+    margin-right: 8px;
+    flex-shrink: 0;
+    user-select: none;
+}
+.cli-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: #e6e6e6;
+    caret-color: var(--grape-soft, #C4935A);
+    padding: 0;
+    line-height: 1.5;
+}
+.cli-input::placeholder {
+    color: #555;
+    font-size: 11px;
+}
+
+/* Terminal body needs no padding since cli-container handles it */
+#terminalBody {
+    padding: 0 !important;
+}
+#terminalBody .cli-container {
+    height: 100%;
+}
+
+/* ================================================================
    STATUS BAR
    ================================================================ */
 .statusbar {

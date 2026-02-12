@@ -121,6 +121,7 @@
         <button class="tb-txt" onclick="openSnippetManager()">Snippets</button>
         <button class="tb-txt" onclick="openThemeEditor()">Theme</button>
         <button class="tb-txt" onclick="openHistoryPanel()">History</button>
+        <button class="tb-txt" onclick="openTerminal()">Terminal</button>
     </div>
     <div class="top-r">
         <button class="tb-txt repl-toggle" id="replBtn" onclick="toggleREPL()" title="REPL Mode: Keep Python state between runs">REPL</button>
@@ -206,14 +207,25 @@
             <div class="b-tabs">
                 <button class="b-tab active" onclick="switchBTab(this,'debug')">Problems</button>
                 <button class="b-tab" onclick="switchBTab(this,'console')">Debug Console</button>
+                <button class="b-tab" onclick="switchBTab(this,'terminal')">Terminal</button>
                 <div style="flex:1"></div>
-                <button class="p-btn" onclick="clearDebug()" title="Clear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                <button class="p-btn" id="termClearBtn" onclick="clearTerminal()" title="Clear Terminal" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                <button class="p-btn" id="debugClearBtn" onclick="clearDebug()" title="Clear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 <button class="p-btn" onclick="toggleBottomPanel()" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="6 9 12 15 18 9"/></svg></button>
             </div>
             <div class="b-body" id="debugBody">
                 <div class="d-line info"><span class="ts">ready</span> No problems detected.</div>
             </div>
             <div class="b-body hidden" id="consoleBody"></div>
+            <div class="b-body hidden" id="terminalBody">
+                <div class="cli-container">
+                    <div class="cli-output" id="cliOutput"><div class="cli-line cli-info">ChocolatePy Terminal — Python 3.11 (Pyodide)</div><div class="cli-line cli-info">Type Python code, shell-like commands, or <span style="color:var(--grape)">help</span> for a list of commands.</div><div class="cli-line cli-info">────────────────────────────────────────</div></div>
+                    <div class="cli-input-row">
+                        <span class="cli-prompt">&gt;&gt;&gt;</span>
+                        <input type="text" class="cli-input" id="cliInput" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="type python or a command...">
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -277,7 +289,6 @@
             <span id="sbTime">0.00s</span>
         </div>
         <div class="sb-i">Python 3.11</div>
-        <div class="sb-i" id="sbVisitors" title="Monthly Active Users">--</div>
         <div class="sb-i">UTF-8</div>
     </div>
 </div>
@@ -1677,7 +1688,29 @@ function toggleRightPanel(){
     setTimeout(()=>{editor.refresh();saveLayout();},250);
 }
 function toggleBottomPanel(){document.getElementById('botPanel').classList.toggle('collapsed');setTimeout(()=>{editor.refresh();saveLayout();},220);}
-function switchBTab(btn,panel){document.querySelectorAll('.b-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('debugBody').classList.toggle('hidden',panel!=='debug');document.getElementById('consoleBody').classList.toggle('hidden',panel!=='console');}
+function switchBTab(btn,panel){
+    document.querySelectorAll('.b-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('debugBody').classList.toggle('hidden',panel!=='debug');
+    document.getElementById('consoleBody').classList.toggle('hidden',panel!=='console');
+    document.getElementById('terminalBody').classList.toggle('hidden',panel!=='terminal');
+    document.getElementById('termClearBtn').style.display = panel==='terminal' ? '' : 'none';
+    document.getElementById('debugClearBtn').style.display = panel==='terminal' ? 'none' : '';
+    if(panel==='terminal'){ setTimeout(()=>document.getElementById('cliInput').focus(),100); }
+}
+function openTerminal(){
+    const bp=document.getElementById('botPanel');
+    if(bp.classList.contains('collapsed')) bp.classList.remove('collapsed');
+    const tabs=document.querySelectorAll('.b-tab');
+    tabs.forEach(t=>t.classList.remove('active'));
+    tabs[2].classList.add('active'); /* Terminal tab */
+    document.getElementById('debugBody').classList.add('hidden');
+    document.getElementById('consoleBody').classList.add('hidden');
+    document.getElementById('terminalBody').classList.remove('hidden');
+    document.getElementById('termClearBtn').style.display = '';
+    document.getElementById('debugClearBtn').style.display = 'none';
+    setTimeout(()=>{editor.refresh();document.getElementById('cliInput').focus();},220);
+}
 
 /* Vertical resize */
 {const h=document.getElementById('vResize'),p=document.getElementById('botPanel');let r=false;
@@ -3325,34 +3358,250 @@ cmds.push(
     { name: 'Toggle Standard Input Panel', shortcut: '', action: toggleStdin },
     { name: 'Toggle REPL Mode', shortcut: '', action: toggleREPL },
     { name: 'Reset REPL State', shortcut: '', action: resetREPL },
+    { name: 'Open Terminal', shortcut: '', action: openTerminal },
+    { name: 'Clear Terminal', shortcut: '', action: clearTerminal },
 );
 
 /* ============================================================
-   FAKE VISITOR COUNTER (deterministic from date)
+   CLI / TERMINAL
    ============================================================ */
-(function initVisitorCounter(){
-    /* Start: 2 MAU on Feb 12, 2026. Grow 85% per month compounded */
-    const START_DATE = new Date('2026-02-12').getTime();
-    const START_COUNT = 2;
-    const MONTHLY_GROWTH = 0.85; /* 85% per month */
-    function getMAU(){
-        const now = Date.now();
-        const days = Math.max(0, (now - START_DATE) / 86400000);
-        const months = days / 30.44; /* average days per month */
-        /* Compound growth: 85% each month */
-        const rate = Math.pow(1 + MONTHLY_GROWTH, months);
-        /* Small deterministic daily jitter for realism (±2%) */
-        const dayIdx = Math.floor(days);
-        const jitter = 1 + 0.02 * Math.sin(dayIdx * 3.17);
-        return Math.max(2, Math.round(START_COUNT * rate * jitter));
+const cliHistory = [];
+let cliHistoryIdx = -1;
+let cliMultiLine = '';
+let cliMultiLineMode = false;
+
+function cliPrint(text, cls='cli-stdout') {
+    const out = document.getElementById('cliOutput');
+    const div = document.createElement('div');
+    div.className = 'cli-line ' + cls;
+    div.textContent = text;
+    out.appendChild(div);
+    out.scrollTop = out.scrollHeight;
+}
+
+function clearTerminal() {
+    const out = document.getElementById('cliOutput');
+    out.innerHTML = '<div class="cli-line cli-info">Terminal cleared.</div>';
+}
+
+function cliSetPrompt(multi) {
+    document.querySelector('.cli-prompt').textContent = multi ? '...' : '>>>';
+}
+
+/* Shell-like built-in commands */
+const CLI_COMMANDS = {
+    help: () => {
+        cliPrint('Available commands:', 'cli-info');
+        cliPrint('  help          — show this help', 'cli-info');
+        cliPrint('  clear         — clear the terminal', 'cli-info');
+        cliPrint('  ls / files    — list project files', 'cli-info');
+        cliPrint('  cat <file>    — show file contents', 'cli-info');
+        cliPrint('  run           — run the current editor file', 'cli-info');
+        cliPrint('  run <file>    — run a specific file', 'cli-info');
+        cliPrint('  pip install <pkg> — install a Python package', 'cli-info');
+        cliPrint('  pip list      — list installed packages', 'cli-info');
+        cliPrint('  pwd           — show current "directory"', 'cli-info');
+        cliPrint('  echo <text>   — print text', 'cli-info');
+        cliPrint('  whoami        — about this IDE', 'cli-info');
+        cliPrint('  python <code> — run inline python', 'cli-info');
+        cliPrint('', 'cli-info');
+        cliPrint('Or type any Python code directly.', 'cli-info');
+    },
+    clear: () => clearTerminal(),
+    ls: () => {
+        const names = Object.keys(files);
+        if (names.length === 0) { cliPrint('(no files)', 'cli-info'); return; }
+        names.forEach(f => cliPrint('  ' + f, 'cli-stdout'));
+    },
+    files: function() { CLI_COMMANDS.ls(); },
+    pwd: () => cliPrint('/chocolatepy/', 'cli-stdout'),
+    whoami: () => cliPrint('ChocolatePy v2.0 — Browser Python IDE (Pyodide/WebAssembly)', 'cli-info'),
+};
+
+async function cliExecPython(code) {
+    if (!pyodide) { cliPrint('Python not loaded yet. Please wait...', 'cli-error'); return; }
+    try {
+        pyodide.runPython('import sys\nfrom io import StringIO\nsys.stdout=StringIO()\nsys.stderr=StringIO()');
+        await pyodide.runPythonAsync(code);
+        const stdout = pyodide.runPython('sys.stdout.getvalue()');
+        const stderr = pyodide.runPython('sys.stderr.getvalue()');
+        if (stdout) stdout.split('\n').forEach(l => { if (l !== '') cliPrint(l, 'cli-stdout'); });
+        if (stderr) stderr.split('\n').forEach(l => { if (l !== '') cliPrint(l, 'cli-error'); });
+        /* If the code is a single expression, try to show its repr */
+        if (!stdout && !stderr) {
+            try {
+                const result = pyodide.runPython('repr(' + code.trim() + ')');
+                if (result && result !== 'None') cliPrint(result, 'cli-result');
+            } catch(e) { /* not an expression, that's fine */ }
+        }
+    } catch(e) {
+        const msg = (e.message || String(e)).split('\n');
+        msg.forEach(l => { if (l) cliPrint(l, 'cli-error'); });
+    } finally {
+        try { pyodide.runPython('sys.stdout=sys.__stdout__\nsys.stderr=sys.__stderr__'); } catch(e) {}
     }
-    function fmt(n){
-        if(n >= 1000) return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
-        return String(n);
+}
+
+async function cliExec(raw) {
+    const input = raw.trim();
+    if (!input) return;
+
+    /* Add to history */
+    cliHistory.push(raw);
+    cliHistoryIdx = cliHistory.length;
+
+    /* Echo the command */
+    cliPrint((cliMultiLineMode ? '... ' : '>>> ') + raw, 'cli-echo');
+
+    /* Multi-line mode: collect lines ending with : or in the middle of a block */
+    if (cliMultiLineMode) {
+        if (input === '') {
+            /* Empty line ends multi-line block */
+            cliMultiLineMode = false;
+            cliSetPrompt(false);
+            const code = cliMultiLine;
+            cliMultiLine = '';
+            await cliExecPython(code);
+            return;
+        }
+        cliMultiLine += raw + '\n';
+        return;
     }
-    const el = document.getElementById('sbVisitors');
-    if(el) el.textContent = fmt(getMAU()) + ' Monthly Active Users';
-})();
+
+    /* Check if this starts a multi-line block (ends with :) */
+    const trimmed = input.replace(/#.*$/, '').trimEnd();
+    if (trimmed.endsWith(':') || trimmed.endsWith('\\')) {
+        cliMultiLineMode = true;
+        cliMultiLine = raw + '\n';
+        cliSetPrompt(true);
+        return;
+    }
+
+    /* Shell-like commands */
+    const parts = input.split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+
+    if (CLI_COMMANDS[cmd]) {
+        CLI_COMMANDS[cmd]();
+        return;
+    }
+
+    /* cat <file> */
+    if (cmd === 'cat' && parts[1]) {
+        const fname = parts.slice(1).join(' ');
+        if (files[fname]) {
+            files[fname].split('\n').forEach(l => cliPrint(l, 'cli-stdout'));
+        } else {
+            cliPrint('File not found: ' + fname, 'cli-error');
+        }
+        return;
+    }
+
+    /* echo */
+    if (cmd === 'echo') {
+        cliPrint(parts.slice(1).join(' '), 'cli-stdout');
+        return;
+    }
+
+    /* run [file] */
+    if (cmd === 'run') {
+        if (parts[1]) {
+            const fname = parts.slice(1).join(' ');
+            if (files[fname]) {
+                cliPrint('Running ' + fname + '...', 'cli-info');
+                await cliExecPython(files[fname]);
+            } else {
+                cliPrint('File not found: ' + fname, 'cli-error');
+            }
+        } else {
+            cliPrint('Running ' + activeFile + '...', 'cli-info');
+            await cliExecPython(editor.getValue());
+        }
+        return;
+    }
+
+    /* pip install / pip list */
+    if (cmd === 'pip' || cmd === '!pip') {
+        const sub = parts[1];
+        if (sub === 'install' && parts[2]) {
+            const pkgs = parts.slice(2);
+            if (!pyodide) { cliPrint('Python not loaded yet.', 'cli-error'); return; }
+            for (const pkg of pkgs) {
+                cliPrint('Installing ' + pkg + '...', 'cli-info');
+                try {
+                    await pyodide.runPythonAsync(`import micropip; await micropip.install('${pkg}')`);
+                    cliPrint('✓ ' + pkg + ' installed successfully', 'cli-success');
+                } catch(e) {
+                    cliPrint('✗ Failed to install ' + pkg + ': ' + (e.message || e), 'cli-error');
+                }
+            }
+            return;
+        }
+        if (sub === 'list') {
+            if (!pyodide) { cliPrint('Python not loaded yet.', 'cli-error'); return; }
+            try {
+                const result = pyodide.runPython(`import micropip; '\\n'.join(f'{d.name}=={d.version}' for d in micropip.list())`);
+                if (result) result.split('\n').forEach(l => cliPrint('  ' + l, 'cli-stdout'));
+                else cliPrint('No packages installed via pip.', 'cli-info');
+            } catch(e) { cliPrint('micropip not available.', 'cli-error'); }
+            return;
+        }
+        cliPrint('Usage: pip install <package> | pip list', 'cli-info');
+        return;
+    }
+
+    /* python -c <code> or python <inline> */
+    if (cmd === 'python' || cmd === 'python3') {
+        if (parts[1] === '-c' && parts[2]) {
+            await cliExecPython(parts.slice(2).join(' '));
+        } else if (parts[1]) {
+            await cliExecPython(parts.slice(1).join(' '));
+        } else {
+            cliPrint('Interactive mode — type Python code directly.', 'cli-info');
+        }
+        return;
+    }
+
+    /* Default: treat as Python code */
+    await cliExecPython(input);
+}
+
+/* CLI input handler */
+document.getElementById('cliInput').addEventListener('keydown', async function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = this.value;
+        this.value = '';
+        await cliExec(val);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (cliHistoryIdx > 0) {
+            cliHistoryIdx--;
+            this.value = cliHistory[cliHistoryIdx] || '';
+        }
+    } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (cliHistoryIdx < cliHistory.length - 1) {
+            cliHistoryIdx++;
+            this.value = cliHistory[cliHistoryIdx] || '';
+        } else {
+            cliHistoryIdx = cliHistory.length;
+            this.value = '';
+        }
+    } else if (e.key === 'c' && e.ctrlKey) {
+        /* Ctrl+C: cancel multi-line */
+        if (cliMultiLineMode) {
+            e.preventDefault();
+            cliMultiLineMode = false;
+            cliMultiLine = '';
+            cliSetPrompt(false);
+            cliPrint('^C', 'cli-error');
+        }
+    } else if (e.key === 'l' && e.ctrlKey) {
+        e.preventDefault();
+        clearTerminal();
+    }
+});
 
 /* ============================================================
    INIT
