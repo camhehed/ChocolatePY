@@ -1641,8 +1641,41 @@ function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g
 /* ============================================================
    PANELS
    ============================================================ */
-function toggleSidebar(){const sb=document.getElementById('sidebar');const bd=document.getElementById('mobileSidebarBD');sb.classList.toggle('collapsed');document.getElementById('btnExp').classList.toggle('active');const isOpen=!sb.classList.contains('collapsed');if(bd){bd.style.display=isOpen&&window.innerWidth<=768?'block':'none';}setTimeout(()=>{editor.refresh();saveLayout();},220);}
-function toggleRightPanel(){document.getElementById('rightPanel').classList.toggle('collapsed');setTimeout(()=>{editor.refresh();saveLayout();},220);}
+function toggleSidebar(){
+    const sb=document.getElementById('sidebar');
+    const bd=document.getElementById('mobileSidebarBD');
+    const mobile=window.innerWidth<=768;
+    sb.classList.toggle('collapsed');
+    document.getElementById('btnExp').classList.toggle('active');
+    const isOpen=!sb.classList.contains('collapsed');
+    /* On mobile: clear any inline width so CSS media queries control sizing */
+    if(mobile){ sb.style.width=''; }
+    if(bd){ bd.style.display=isOpen&&mobile?'block':'none'; }
+    /* On mobile, close right panel when opening sidebar to avoid overlap */
+    if(mobile && isOpen){
+        const rp=document.getElementById('rightPanel');
+        if(!rp.classList.contains('collapsed')){ rp.classList.add('collapsed'); rp.style.width=''; }
+    }
+    setTimeout(()=>{editor.refresh();saveLayout();},250);
+}
+function toggleRightPanel(){
+    const rp=document.getElementById('rightPanel');
+    const mobile=window.innerWidth<=768;
+    rp.classList.toggle('collapsed');
+    const isOpen=!rp.classList.contains('collapsed');
+    /* On mobile: clear inline width, and close sidebar if opening output */
+    if(mobile){ rp.style.width=''; }
+    if(mobile && isOpen){
+        const sb=document.getElementById('sidebar');
+        if(!sb.classList.contains('collapsed')){
+            sb.classList.add('collapsed');
+            sb.style.width='';
+            document.getElementById('btnExp').classList.remove('active');
+            document.getElementById('mobileSidebarBD').style.display='none';
+        }
+    }
+    setTimeout(()=>{editor.refresh();saveLayout();},250);
+}
 function toggleBottomPanel(){document.getElementById('botPanel').classList.toggle('collapsed');setTimeout(()=>{editor.refresh();saveLayout();},220);}
 function switchBTab(btn,panel){document.querySelectorAll('.b-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('debugBody').classList.toggle('hidden',panel!=='debug');document.getElementById('consoleBody').classList.toggle('hidden',panel!=='console');}
 
@@ -2437,21 +2470,44 @@ function saveLayout() {
     localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
 }
 
+function isMobile() { return window.innerWidth <= 768; }
+function isPhone() { return window.innerWidth <= 480; }
+
 function loadLayout() {
     try {
         const data = localStorage.getItem(LAYOUT_KEY);
-        if (!data) return;
-        const layout = JSON.parse(data);
+        const mobile = isMobile();
 
-        if (layout.sidebarCollapsed) {
+        /* On mobile: always collapse sidebar & right panel, ignore saved sizes */
+        if (mobile) {
             document.getElementById('sidebar').classList.add('collapsed');
             document.getElementById('btnExp').classList.remove('active');
+            document.getElementById('rightPanel').classList.add('collapsed');
+            /* Clear any saved inline sizes that break responsive CSS */
+            document.getElementById('rightPanel').style.width = '';
+            document.getElementById('sidebar').style.width = '';
+            document.getElementById('botPanel').style.height = '';
         }
-        if (layout.rightCollapsed) document.getElementById('rightPanel').classList.add('collapsed');
-        if (layout.bottomCollapsed) document.getElementById('botPanel').classList.add('collapsed');
-        if (layout.rightWidth) document.getElementById('rightPanel').style.width = layout.rightWidth;
-        if (layout.bottomHeight) document.getElementById('botPanel').style.height = layout.bottomHeight;
-        if (layout.sidebarWidth) document.getElementById('sidebar').style.width = layout.sidebarWidth;
+
+        if (!data) { setTimeout(() => editor.refresh(), 250); return; }
+        const layout = JSON.parse(data);
+
+        if (!mobile) {
+            /* Desktop: restore full layout */
+            if (layout.sidebarCollapsed) {
+                document.getElementById('sidebar').classList.add('collapsed');
+                document.getElementById('btnExp').classList.remove('active');
+            }
+            if (layout.rightCollapsed) document.getElementById('rightPanel').classList.add('collapsed');
+            if (layout.bottomCollapsed) document.getElementById('botPanel').classList.add('collapsed');
+            if (layout.rightWidth) document.getElementById('rightPanel').style.width = layout.rightWidth;
+            if (layout.bottomHeight) document.getElementById('botPanel').style.height = layout.bottomHeight;
+            if (layout.sidebarWidth) document.getElementById('sidebar').style.width = layout.sidebarWidth;
+        } else {
+            /* Mobile: only restore bottom panel state */
+            if (layout.bottomCollapsed) document.getElementById('botPanel').classList.add('collapsed');
+        }
+
         if (layout.fontSize && layout.fontSize !== 14) {
             fontSize = layout.fontSize;
             document.querySelector('.CodeMirror').style.fontSize = fontSize + 'px';
@@ -2463,6 +2519,33 @@ function loadLayout() {
         setTimeout(() => editor.refresh(), 250);
     } catch (e) { /* ignore */ }
 }
+
+/* Handle orientation changes & resize: fix layout when switching mobile <-> desktop */
+window.addEventListener('resize', (function() {
+    let timer;
+    return function() {
+        clearTimeout(timer);
+        timer = setTimeout(function() {
+            const mobile = isMobile();
+            const sb = document.getElementById('sidebar');
+            const rp = document.getElementById('rightPanel');
+            if (mobile) {
+                /* Entering mobile: clear inline sizes, collapse panels */
+                sb.style.width = '';
+                rp.style.width = '';
+                if (!sb.classList.contains('collapsed')) {
+                    sb.classList.add('collapsed');
+                    document.getElementById('btnExp').classList.remove('active');
+                    document.getElementById('mobileSidebarBD').style.display = 'none';
+                }
+                if (!rp.classList.contains('collapsed')) {
+                    rp.classList.add('collapsed');
+                }
+            }
+            editor.refresh();
+        }, 200);
+    };
+})());
 
 loadLayout();
 

@@ -2181,6 +2181,7 @@ button:focus-visible {
         opacity: 1;
         pointer-events: auto;
         transform: translateX(-100%);
+        border-right: none;
     }
     .mobile-sidebar-backdrop {
         display: none;
@@ -2205,6 +2206,7 @@ button:focus-visible {
         transform: translateY(0);
     }
     .right-panel.collapsed {
+        width: 100% !important;
         transform: translateY(100%);
     }
 
@@ -2231,9 +2233,12 @@ button:focus-visible {
     /* Bottom panel: shorter */
     .bottom-panel { height: 120px; }
 
-    /* Resize handles: wider touch target */
-    .h-resize { width: 8px; }
-    .h-resize::before { inset: 0 -4px; }
+    /* Resize handles: hide on mobile (no mouse dragging) */
+    .h-resize { display: none; }
+    .v-resize { display: none; }
+
+    /* Editor: remove minimap padding */
+    .editor-wrap .CodeMirror-scroll { padding-right: 0 !important; }
 
     /* Split editor: stack vertically */
     .editor-split-container.split-active {
@@ -2247,10 +2252,13 @@ button:focus-visible {
 
     /* Minimap: hide on tablet */
     .minimap { display: none !important; }
-    .editor-wrap .CodeMirror-scroll { padding-right: 0; }
 
     /* Breadcrumbs: scrollable */
     .breadcrumb-bar { overflow-x: auto; flex-wrap: nowrap; }
+
+    /* Status bar: wrap better */
+    .statusbar { padding: 0 8px; font-size: 10px; }
+    .sb-l, .sb-r { gap: 8px; }
 }
 
 /* ── Phone (480px and below) ───────────────────────────────── */
@@ -2295,17 +2303,22 @@ button:focus-visible {
     /* Right panel: taller on phone */
     .right-panel {
         height: 55vh;
+        width: 100% !important;
+    }
+    .right-panel.collapsed {
+        width: 100% !important;
     }
 
     /* Bottom panel: minimal */
     .bottom-panel { height: 100px; }
     .b-tab { padding: 0 8px; font-size: 10px; }
 
-    /* Editor: tighter padding */
-    .CodeMirror { font-size: 13px; }
+    /* Editor: tighter padding, no minimap gap */
+    .CodeMirror { font-size: 13px !important; }
     .CodeMirror-gutters { width: 32px !important; }
+    .editor-wrap .CodeMirror-scroll { padding-right: 0 !important; }
 
-    /* Dropdown menus: full-width */
+    /* Dropdown menus: full-width bottom sheet */
     .dd {
         position: fixed !important;
         top: auto !important;
@@ -2336,8 +2349,11 @@ button:focus-visible {
     }
 
     /* Status bar: compact */
+    .statusbar { height: 22px; }
     .s-left, .s-right { gap: 6px; }
     .s-left span, .s-right span { font-size: 10px; }
+    .sb-l, .sb-r { gap: 4px; }
+    .sb-i { font-size: 9px; }
 
     /* Word count bar */
     .wc-bar { font-size: 10px; padding: 0 6px; }
@@ -2349,6 +2365,9 @@ button:focus-visible {
     .mobile-fab-run {
         display: flex;
     }
+
+    /* Prevent body scroll when panels open */
+    .workspace { touch-action: pan-y; }
 }
 
 /* ── Mobile sidebar backdrop ─────────────────────────────────── */
