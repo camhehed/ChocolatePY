@@ -1,0 +1,3272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChocolatePy — Python IDE</title>
+
+<!-- PWA / Chromebook App -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7B2D8E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ChocolatePy">
+<meta name="application-name" content="ChocolatePy">
+<meta name="msapplication-TileColor" content="#7B2D8E">
+<meta name="msapplication-TileImage" content="icons/icon-144.png">
+<meta name="description" content="A beautiful, privacy-first Python IDE that runs entirely in your browser. Write, run, and debug Python offline with smart autocomplete, themes, and 25+ features.">
+<meta name="keywords" content="Python, IDE, code editor, browser IDE, offline, Chromebook, education, programming">
+<meta property="og:title" content="ChocolatePy — Python IDE">
+<meta property="og:description" content="A beautiful, privacy-first Python IDE that runs entirely in your browser. No install, no server, no data collection.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="icons/icon-512.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ChocolatePy — Python IDE">
+<meta name="twitter:description" content="Write Python in a beautiful browser IDE. Works offline, runs locally, zero data collection.">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/icon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="icons/icon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="chocolatepy.css">
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="load-ov" id="loadOv">
+    <div class="load-sp"></div>
+    <div style="font-size:14px;font-weight:600">ChocolatePy</div>
+    <div style="font-size:12px;color:var(--text-3);margin-top:4px">Initializing Python runtime...</div>
+    <div class="skeleton-bar" style="width:200px;margin-top:12px"></div>
+    <div class="skeleton-bar" style="width:140px;margin-top:6px"></div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- WELCOME / ONBOARDING SCREEN -->
+<div class="welcome-overlay" id="welcomeOverlay">
+    <div class="welcome-modal">
+        <div class="welcome-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:40px;height:40px;color:var(--grape)"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="16" y2="21"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="2" y1="16" x2="22" y2="16"/></svg>
+            <h2>Welcome to ChocolatePy v1.0</h2>
+            <p>A beautiful math-focused Python IDE</p>
+        </div>
+        <div class="welcome-features">
+            <div class="welcome-feature">
+                <div class="wf-icon">&#9654;</div>
+                <div><strong>Run Code</strong><br><small>Press <kbd>Ctrl+Enter</kbd> to execute</small></div>
+            </div>
+            <div class="welcome-feature">
+                <div class="wf-icon">&#128269;</div>
+                <div><strong>Command Palette</strong><br><small>Press <kbd>Ctrl+Shift+P</kbd> for all commands</small></div>
+            </div>
+            <div class="welcome-feature">
+                <div class="wf-icon">&#127912;</div>
+                <div><strong>Themes</strong><br><small>6 built-in themes + custom colors</small></div>
+            </div>
+            <div class="welcome-feature">
+                <div class="wf-icon">&#128640;</div>
+                <div><strong>Smart Autocomplete</strong><br><small>200+ completions, fuzzy matching, docs</small></div>
+            </div>
+            <div class="welcome-feature">
+                <div class="wf-icon">&#128196;</div>
+                <div><strong>Snippets</strong><br><small>Tab-expandable code templates</small></div>
+            </div>
+            <div class="welcome-feature">
+                <div class="wf-icon">&#9881;</div>
+                <div><strong>Zen Mode</strong><br><small>Press <kbd>Ctrl+Shift+Z</kbd> for distraction-free</small></div>
+            </div>
+        </div>
+        <div class="welcome-actions">
+            <label class="welcome-check"><input type="checkbox" id="welcomeNoShow"> Don't show again</label>
+            <button class="run-btn" onclick="closeWelcome()" style="padding:10px 32px;font-size:14px">Get Started</button>
+        </div>
+    </div>
+</div>
+
+<div class="app">
+
+<!-- TITLE BAR -->
+<div class="titlebar">
+    <div class="tb-left">
+        <span class="tb-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;vertical-align:middle"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="16" y2="21"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="2" y1="16" x2="22" y2="16"/></svg></span>
+        <span class="tb-brand">ChocolatePy <span>— Python IDE</span> <span class="version-badge">v1.0</span></span>
+    </div>
+    <div class="tb-center" id="titleFile">main.py</div>
+    <div class="tb-right">
+        <div class="st-dot loading" id="stDot"></div>
+        <span style="font-size:11px;opacity:.85" id="stText">Loading...</span>
+    </div>
+</div>
+
+<!-- TOP NAV BAR (replaces left sidebar icons from VSC) -->
+<div class="topbar">
+    <div class="top-l">
+        <button class="tb-btn active" id="btnExp" onclick="toggleSidebar()" title="Explorer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Explorer
+        </button>
+        <div class="tb-div"></div>
+        <button class="tb-btn" onclick="openPal()" title="Command Palette (Ctrl+Shift+P)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Search
+        </button>
+        <div class="tb-div"></div>
+        <button class="tb-btn" onclick="insertMathTemplate()" title="Insert math template">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><text x="4" y="18" font-size="14" font-weight="700" fill="currentColor" stroke="none">π</text></svg>
+            Math
+        </button>
+        <div class="tb-div"></div>
+        <button class="tb-btn" onclick="toggleBottomPanel()" title="Toggle Problems Panel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Problems
+        </button>
+        <div class="tb-div"></div>
+        <button class="tb-btn" onclick="toggleRightPanel()" title="Toggle Output Panel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            Output
+        </button>
+        <div class="tb-div"></div>
+        <button class="tb-btn" onclick="toggleSplitEditor()" title="Split Editor">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+            Split
+        </button>
+        <div class="tb-div"></div>
+        <button class="tb-btn" onclick="openSnippetManager()" title="Snippets">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/></svg>
+            Snippets
+        </button>
+        <div class="tb-div"></div>
+        <button class="tb-btn" onclick="toggleVarInspector()" title="Variable Inspector">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+            Variables
+        </button>
+        <div class="tb-div"></div>
+        <button class="tb-btn" onclick="openThemeEditor()" title="Theme Editor">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            Themes
+        </button>
+        <div class="tb-div"></div>
+        <button class="tb-btn" onclick="openHistoryPanel()" title="Execution History">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            History
+        </button>
+        <div class="tb-div"></div>
+        <button class="tb-btn" onclick="openShortcuts()" title="Keyboard Shortcuts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6" y2="8"/><line x1="10" y1="8" x2="10" y2="8"/><line x1="14" y1="8" x2="14" y2="8"/><line x1="18" y1="8" x2="18" y2="8"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="8" y1="16" x2="16" y2="16"/></svg>
+            Keys
+        </button>
+        <div class="tb-div"></div>
+        <button class="tb-btn" onclick="toggleZenMode()" title="Zen Mode (Ctrl+Shift+Z)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+            Zen
+        </button>
+    </div>
+    <div class="top-r">
+        <button class="run-btn" id="runBtn" onclick="runCode()" disabled title="Run (Ctrl+Enter)">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            &nbsp;Run
+        </button>
+        <div class="tb-div"></div>
+        <!-- PWA Install Button (hidden until install prompt fires) -->
+        <button class="tb-btn install-app-btn" id="pwaInstallBtn" onclick="installPWA()" title="Install ChocolatePy as an App" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Install App
+        </button>
+        <div class="tb-div" id="pwaInstallDiv" style="display:none"></div>
+        <div style="position:relative">
+            <button class="tb-btn icon-only" onclick="toggleDD('settDD')" title="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+            <div class="dd" id="settDD">
+                <div class="dd-i" onclick="changeFontSize(1)">Increase Font Size</div>
+                <div class="dd-i" onclick="changeFontSize(-1)">Decrease Font Size</div>
+                <div class="dd-div"></div>
+                <div class="dd-i" onclick="toggleWrap()">Toggle Word Wrap</div>
+                <div class="dd-i" onclick="toggleLineNums()">Toggle Line Numbers</div>
+                <div class="dd-i" onclick="cycleTabSize()">Tab Size: <span id="tabSizeLabel">4</span></div>
+                <div class="dd-div"></div>
+                <div class="dd-i" onclick="exportFile()">Download File</div>
+                <div class="dd-i" onclick="printCode()">Print Code</div>
+                <div class="dd-div"></div>
+                <div class="dd-i" onclick="openAbout()">About ChocolatePy</div>
+            </div>
+        </div>
+        <div style="position:relative">
+            <button class="tb-btn icon-only" onclick="toggleDD('profDD')" title="Profile">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </button>
+            <div class="dd" id="profDD">
+                <div class="dd-i" style="font-weight:600;color:var(--grape)">ChocolatePy User</div>
+                <div class="dd-div"></div>
+                <div class="dd-i" onclick="openAbout()">About</div>
+                <div class="dd-i" onclick="openLegal('tos')">Terms of Service</div>
+                <div class="dd-i" onclick="openLegal('privacy')">Privacy Policy</div>
+                <div class="dd-div"></div>
+                <div class="dd-i" onclick="clearAll()">Clear Saved Data</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FILE TABS -->
+<div class="tabs-bar" id="tabsBar">
+    <button class="tab-add" onclick="newFile()" title="New File"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+</div>
+
+<!-- WORKSPACE: sidebar | editor+bottom | right -->
+<div class="workspace">
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="side-section">
+            <div class="side-hdr collapsible" onclick="toggleSideSection(this)">
+                <svg class="side-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px"><polyline points="6 9 12 15 18 9"/></svg>
+                Explorer
+                <button class="side-action" onclick="event.stopPropagation();document.getElementById('importFileInput').click()" title="Import .py file">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </button>
+                <input type="file" id="importFileInput" accept=".py,.txt,.json,.csv" multiple style="display:none" onchange="importFiles(event)">
+            </div>
+            <div class="side-list" id="fileList"></div>
+        </div>
+    </div>
+
+    <!-- Center: editor + bottom debug -->
+    <div class="center-col">
+        <!-- Breadcrumbs -->
+        <div class="breadcrumbs" id="breadcrumbs">
+            <span class="bc-item" id="bcFile">main.py</span>
+        </div>
+        <div class="editor-area">
+            <div class="editor-split-container" id="editorSplitContainer">
+                <div class="editor-wrap" id="editorWrapLeft">
+                    <textarea id="codeArea"></textarea>
+                    <div class="minimap" id="minimap" title="Code minimap"><canvas id="minimapCanvas"></canvas><div class="minimap-viewport" id="minimapViewport"></div></div>
+                </div>
+                <div class="split-resize" id="splitResize" style="display:none"></div>
+                <div class="editor-wrap split-pane" id="editorWrapRight" style="display:none">
+                    <textarea id="codeAreaRight"></textarea>
+                    <div class="minimap" id="minimapRight" title="Code minimap"><canvas id="minimapCanvasRight"></canvas><div class="minimap-viewport" id="minimapViewportRight"></div></div>
+                </div>
+            </div>
+        </div>
+        <div class="v-resize" id="vResize"></div>
+        <div class="bottom-panel" id="botPanel">
+            <div class="b-tabs">
+                <button class="b-tab active" onclick="switchBTab(this,'debug')">Problems</button>
+                <button class="b-tab" onclick="switchBTab(this,'console')">Debug Console</button>
+                <div style="flex:1"></div>
+                <button class="p-btn" onclick="clearDebug()" title="Clear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                <button class="p-btn" onclick="toggleBottomPanel()" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="6 9 12 15 18 9"/></svg></button>
+            </div>
+            <div class="b-body" id="debugBody">
+                <div class="d-line info"><span class="ts">ready</span> No problems detected.</div>
+            </div>
+            <div class="b-body hidden" id="consoleBody"></div>
+        </div>
+    </div>
+
+    <!-- Horizontal resize -->
+    <div class="h-resize" id="hResize"></div>
+
+    <!-- Right panel: output -->
+    <div class="right-panel" id="rightPanel">
+        <div class="p-hdr">
+            <div class="p-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                Output <span class="badge" id="outCount">0</span>
+            </div>
+            <div class="p-acts">
+                <button class="p-btn" onclick="copyOutput()" title="Copy Output"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+                <button class="p-btn" onclick="toggleFullscreenOutput()" title="Fullscreen Output"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg></button>
+                <button class="p-btn" onclick="printOutput()" title="Print / Export Output"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+                <button class="p-btn" onclick="clearOutput()" title="Clear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                <button class="p-btn" onclick="toggleRightPanel()" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+        </div>
+        <div class="res-body" id="resBody">
+            <div class="res-welcome" id="resWelcome">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                <p>Run your code to see results</p>
+                <p><kbd>Ctrl</kbd> + <kbd>Enter</kbd></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+    <div class="sb-l">
+        <div class="sb-i" style="cursor:pointer" onclick="toggleBottomPanel()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <span id="sbErr">0</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:4px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span id="sbWarn">0</span>
+        </div>
+        <div class="sb-i"><span id="sbCur">Ln 1, Col 1</span></div>
+    </div>
+    <div class="sb-r">
+        <div class="sb-i sb-wordcount" id="sbWordCount" title="Word / Character count">0 words, 0 chars</div>
+        <div class="sb-i" id="sbAutoSave" title="Auto-save status" style="display:none">
+            <span class="autosave-dot"></span> <span id="sbAutoSaveText">Saved</span>
+        </div>
+        <div class="sb-i" id="sbTimer" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span id="sbTime">0.00s</span>
+        </div>
+        <div class="sb-i">Python 3.11 (Pyodide)</div>
+        <div class="sb-i">UTF-8</div>
+        <div class="sb-i">Math Mode</div>
+    </div>
+</div>
+
+</div><!-- /app -->
+
+<!-- GO TO LINE DIALOG -->
+<div class="modal-ov" id="gotoOv">
+    <div class="modal-box">
+        <div class="modal-title">Go to Line</div>
+        <input type="number" id="gotoIn" placeholder="Line number..." min="1">
+        <div class="modal-acts">
+            <button class="modal-btn" onclick="closeGoto()">Cancel</button>
+            <button class="modal-btn primary" onclick="doGoto()">Go</button>
+        </div>
+    </div>
+</div>
+
+<!-- FIND & REPLACE BAR -->
+<div class="find-bar hidden" id="findBar">
+    <div class="find-row">
+        <input type="text" id="findIn" placeholder="Find..." oninput="doFind()">
+        <span class="find-count" id="findCount">0 results</span>
+        <button class="find-btn" onclick="doFindNext()" title="Next (Enter)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <button class="find-btn" onclick="doFindPrev()" title="Previous (Shift+Enter)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <button class="find-btn" onclick="toggleReplace()" title="Toggle Replace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg></button>
+        <button class="find-btn" onclick="closeFindBar()" title="Close (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="find-row hidden" id="replaceRow">
+        <input type="text" id="replaceIn" placeholder="Replace...">
+        <button class="find-btn text" onclick="doReplaceOne()">Replace</button>
+        <button class="find-btn text" onclick="doReplaceAll()">All</button>
+    </div>
+</div>
+
+<!-- COMMAND PALETTE -->
+<div class="pal-ov" id="palOv" onclick="closePal(event)">
+    <div class="pal-box" onclick="event.stopPropagation()">
+        <input type="text" id="palIn" placeholder="Type a command..." oninput="filterPal(this.value)">
+        <div class="pal-list" id="palList"></div>
+    </div>
+</div>
+
+<!-- SNIPPET MANAGER MODAL -->
+<div class="modal-ov" id="snippetOv" onclick="closeSnippetManager(event)">
+    <div class="snippet-modal" onclick="event.stopPropagation()">
+        <div class="snippet-header">
+            <span class="snippet-title">Snippet Manager</span>
+            <div style="display:flex;gap:6px">
+                <button class="snippet-action-btn" onclick="newSnippet()">+ New Snippet</button>
+                <button class="snippet-action-btn" onclick="exportSnippets()">Export</button>
+                <button class="snippet-action-btn" onclick="document.getElementById('snippetImportFile').click()">Import</button>
+                <input type="file" id="snippetImportFile" accept=".json" style="display:none" onchange="importSnippets(event)">
+            </div>
+        </div>
+        <div class="snippet-body">
+            <div class="snippet-sidebar" id="snippetList"></div>
+            <div class="snippet-editor">
+                <div class="snippet-form" id="snippetForm" style="display:none">
+                    <label class="snip-label">Name</label>
+                    <input type="text" id="snippetName" class="snip-input" placeholder="My Snippet">
+                    <label class="snip-label">Shortcut (prefix to trigger)</label>
+                    <input type="text" id="snippetShortcut" class="snip-input" placeholder="e.g. forloop">
+                    <label class="snip-label">Code</label>
+                    <textarea id="snippetCode" class="snip-textarea" placeholder="for i in range(10):\n    pass"></textarea>
+                    <div style="display:flex;gap:8px;margin-top:10px">
+                        <button class="snippet-action-btn primary" onclick="saveSnippet()">Save</button>
+                        <button class="snippet-action-btn" onclick="deleteSnippet()">Delete</button>
+                        <button class="snippet-action-btn" onclick="insertSnippetIntoEditor()">Insert into Editor</button>
+                    </div>
+                </div>
+                <div class="snippet-empty" id="snippetEmpty">
+                    <p>Select a snippet or create a new one</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- VARIABLE INSPECTOR PANEL -->
+<div class="var-inspector" id="varInspector" style="display:none">
+    <div class="var-header">
+        <span class="var-title">Variable Inspector</span>
+        <button class="p-btn" onclick="toggleVarInspector()" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="var-body" id="varBody">
+        <div class="var-empty">Run your code to inspect variables</div>
+    </div>
+</div>
+
+<!-- KEYBOARD SHORTCUTS PANEL -->
+<div class="modal-ov" id="shortcutsOv" onclick="closeShortcuts(event)">
+    <div class="shortcuts-modal" onclick="event.stopPropagation()">
+        <div class="shortcuts-header">
+            <span class="theme-title">Keyboard Shortcuts</span>
+            <button class="p-btn" onclick="closeShortcuts()" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="shortcuts-body">
+            <div class="shortcut-group"><div class="shortcut-group-title">Running</div>
+                <div class="shortcut-row"><span class="shortcut-desc">Run Code</span><kbd>Ctrl+Enter</kbd></div>
+            </div>
+            <div class="shortcut-group"><div class="shortcut-group-title">File</div>
+                <div class="shortcut-row"><span class="shortcut-desc">Save File</span><kbd>Ctrl+S</kbd></div>
+                <div class="shortcut-row"><span class="shortcut-desc">New File</span><kbd>Via Explorer</kbd></div>
+            </div>
+            <div class="shortcut-group"><div class="shortcut-group-title">Editing</div>
+                <div class="shortcut-row"><span class="shortcut-desc">Duplicate Line</span><kbd>Ctrl+Shift+D</kbd></div>
+                <div class="shortcut-row"><span class="shortcut-desc">Move Line Up</span><kbd>Alt+Up</kbd></div>
+                <div class="shortcut-row"><span class="shortcut-desc">Move Line Down</span><kbd>Alt+Down</kbd></div>
+                <div class="shortcut-row"><span class="shortcut-desc">Toggle Comment</span><kbd>Ctrl+/</kbd></div>
+                <div class="shortcut-row"><span class="shortcut-desc">Select Next Occurrence</span><kbd>Ctrl+D</kbd></div>
+                <div class="shortcut-row"><span class="shortcut-desc">Indent</span><kbd>Tab</kbd></div>
+                <div class="shortcut-row"><span class="shortcut-desc">Dedent</span><kbd>Shift+Tab</kbd></div>
+            </div>
+            <div class="shortcut-group"><div class="shortcut-group-title">Navigation</div>
+                <div class="shortcut-row"><span class="shortcut-desc">Command Palette</span><kbd>Ctrl+Shift+P</kbd></div>
+                <div class="shortcut-row"><span class="shortcut-desc">Go to Line</span><kbd>Ctrl+G</kbd></div>
+                <div class="shortcut-row"><span class="shortcut-desc">Find & Replace</span><kbd>Ctrl+F</kbd></div>
+                <div class="shortcut-row"><span class="shortcut-desc">Autocomplete</span><kbd>Ctrl+Space</kbd></div>
+            </div>
+            <div class="shortcut-group"><div class="shortcut-group-title">View</div>
+                <div class="shortcut-row"><span class="shortcut-desc">Zen Mode</span><kbd>Ctrl+Shift+Z</kbd></div>
+                <div class="shortcut-row"><span class="shortcut-desc">Format Code</span><kbd>Ctrl+Shift+F</kbd></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ZEN MODE OVERLAY -->
+<div class="zen-overlay" id="zenOverlay" style="display:none">
+    <div class="zen-exit-hint" id="zenExitHint">Press Esc or Ctrl+Shift+Z to exit Zen Mode</div>
+    <div class="zen-editor" id="zenEditor"></div>
+</div>
+
+<!-- EXECUTION HISTORY MODAL -->
+<div class="modal-ov" id="historyOv" onclick="closeHistory(event)">
+    <div class="snippet-modal" onclick="event.stopPropagation()">
+        <div class="snippet-header">
+            <span class="snippet-title">Execution History</span>
+            <div style="display:flex;gap:6px">
+                <button class="snippet-action-btn" onclick="clearHistory()">Clear History</button>
+            </div>
+        </div>
+        <div class="snippet-body">
+            <div class="history-list" id="historyList"></div>
+            <div class="history-preview">
+                <div class="snippet-empty" id="historyEmpty"><p>Select a run to preview</p></div>
+                <pre class="history-code" id="historyCode" style="display:none"></pre>
+                <div style="display:none;gap:8px;margin-top:10px" id="historyActions">
+                    <button class="snippet-action-btn primary" onclick="rerunHistory()">Re-run this code</button>
+                    <button class="snippet-action-btn" onclick="loadHistory()">Load into editor</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ABOUT / LEGAL MODAL -->
+<div class="modal-ov" id="aboutOv" onclick="closeAbout(event)">
+    <div class="about-modal" onclick="event.stopPropagation()">
+        <div class="about-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--grape)" stroke-width="2" style="width:32px;height:32px"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="16" y2="21"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="2" y1="16" x2="22" y2="16"/></svg>
+            <h2 style="margin:0;font-size:20px">ChocolatePy</h2>
+            <div class="version-badge" style="font-size:12px">v1.0</div>
+        </div>
+        <div class="about-tabs">
+            <button class="about-tab active" onclick="switchAboutTab(this,'aboutContent')">About</button>
+            <button class="about-tab" onclick="switchAboutTab(this,'tosContent')">Terms of Service</button>
+            <button class="about-tab" onclick="switchAboutTab(this,'privacyContent')">Privacy Policy</button>
+        </div>
+        <div class="about-body">
+            <div class="about-content" id="aboutContent">
+                <h3>About ChocolatePy</h3>
+                <p><strong>ChocolatePy v1.0</strong> is a fully-featured, professional-grade Python integrated development environment (IDE) designed to run entirely within your web browser. Our mission is to make Python programming accessible, beautiful, and powerful — without requiring any downloads, installations, or server infrastructure.</p>
+
+                <h4>Our Story</h4>
+                <p>ChocolatePy was born from a simple idea: that writing Python code should be a delightful experience, regardless of your operating system, hardware, or technical setup. Traditional IDEs often require complex installations, plugin management, and system configuration. We wanted to eliminate every barrier between a developer and their code.</p>
+                <p>What started as a lightweight code editor has grown into a comprehensive development environment trusted by students, educators, hobbyists, and professional developers around the world. Every feature in ChocolatePy has been thoughtfully designed with both beginners and experienced programmers in mind.</p>
+
+                <h4>Technology</h4>
+                <p>ChocolatePy is built on a foundation of cutting-edge web technologies that together create a native-quality IDE experience directly in the browser:</p>
+                <ul>
+                    <li><strong>Pyodide (Python 3.11)</strong> — A full CPython interpreter compiled to WebAssembly, enabling real Python execution with access to packages like NumPy, pandas, matplotlib, scikit-learn, and 75+ scientific computing libraries, all running locally on your machine.</li>
+                    <li><strong>CodeMirror 5</strong> — A versatile, extensible code editor component providing syntax highlighting, intelligent code folding, bracket matching, search &amp; replace, multiple cursors, and dozens of language modes.</li>
+                    <li><strong>Web Workers &amp; WebAssembly</strong> — Python execution runs in a separate thread to keep the UI responsive even during computationally intensive operations.</li>
+                    <li><strong>localStorage API</strong> — All your files, preferences, themes, and settings are persisted locally in your browser with zero cloud dependency.</li>
+                </ul>
+
+                <h4>Core Features</h4>
+                <ul>
+                    <li><strong>Intelligent Autocomplete</strong> — Context-aware code completion with 200+ built-in suggestions, frequency-based learning, and support for Python standard library, NumPy, pandas, and more.</li>
+                    <li><strong>Split Editor</strong> — Work on two files side-by-side with independent scrolling, syntax highlighting, and cursor tracking.</li>
+                    <li><strong>Code Minimap</strong> — A bird's-eye overview of your entire file for quick navigation through large codebases.</li>
+                    <li><strong>Snippet System</strong> — Create, manage, and instantly insert reusable code templates with a searchable snippet library.</li>
+                    <li><strong>Variable Inspector</strong> — Real-time introspection of all variables in your program's namespace, including types, values, and memory representations.</li>
+                    <li><strong>Execution History</strong> — Browse, search, and re-run previous code executions with timestamps and output records.</li>
+                    <li><strong>Theme Editor</strong> — Six professionally designed built-in themes plus a full visual theme editor to create, export, and import custom color schemes.</li>
+                    <li><strong>Zen Mode</strong> — A distraction-free, fullscreen editing experience that hides all UI chrome so you can focus purely on your code.</li>
+                    <li><strong>Rainbow Brackets</strong> — Color-coded matching brackets and parentheses for easy visual parsing of nested expressions.</li>
+                    <li><strong>Auto-format &amp; Indentation</strong> — One-click code formatting with configurable tab sizes (2 or 4 spaces) and smart auto-indentation.</li>
+                    <li><strong>Drag-and-Drop Import</strong> — Import .py, .txt, .json, .csv, and .md files by dragging them directly into the workspace.</li>
+                    <li><strong>Print &amp; Export</strong> — Generate clean, formatted printable views of your code or output for documentation and sharing.</li>
+                    <li><strong>Keyboard Shortcuts</strong> — Comprehensive keyboard shortcut system with a searchable reference panel.</li>
+                    <li><strong>Command Palette</strong> — Quick access to every IDE feature via a searchable command palette (Ctrl+Shift+P).</li>
+                    <li><strong>Persistent Layout</strong> — Your panel sizes, sidebar width, and editor configuration are remembered across sessions.</li>
+                </ul>
+
+                <h4>Accessibility &amp; Compatibility</h4>
+                <p>ChocolatePy is designed to work in all modern browsers including Google Chrome, Mozilla Firefox, Microsoft Edge, and Apple Safari. The IDE is fully functional on desktop devices and includes responsive design considerations for larger tablet screens. We are committed to improving accessibility and welcome feedback from users who rely on assistive technologies.</p>
+
+                <h4>Open-Source Credits &amp; Acknowledgments</h4>
+                <p>ChocolatePy would not be possible without the incredible open-source projects and communities that power it:</p>
+                <ul>
+                    <li><a href="https://pyodide.org" target="_blank" style="color:var(--grape)">Pyodide</a> — Mozilla &amp; contributors, for bringing Python to the browser via WebAssembly.</li>
+                    <li><a href="https://codemirror.net" target="_blank" style="color:var(--grape)">CodeMirror</a> — Marijn Haverbeke, for creating the most capable browser-based code editor.</li>
+                    <li><a href="https://fonts.google.com" target="_blank" style="color:var(--grape)">Google Fonts</a> — For the Inter and JetBrains Mono typefaces used throughout the interface.</li>
+                    <li>The Python Software Foundation, for stewarding the Python programming language.</li>
+                    <li>All contributors, testers, and community members who have helped shape ChocolatePy into what it is today.</li>
+                </ul>
+
+                <h4>Version History</h4>
+                <table style="width:100%;font-size:12px;border-collapse:collapse;margin:8px 0">
+                    <tr style="border-bottom:1px solid var(--border)">
+                        <td style="padding:6px 8px;font-weight:600">v1.0</td>
+                        <td style="padding:6px 8px;color:var(--text-3)">February 2026</td>
+                        <td style="padding:6px 8px">Initial public release with full IDE feature set, 6 themes, smart autocomplete, split editor, variable inspector, and 25+ productivity features.</td>
+                    </tr>
+                </table>
+
+                <h4>Contact &amp; Support</h4>
+                <p>We value your feedback and are committed to continuously improving ChocolatePy. If you encounter a bug, have a feature request, or simply want to share your experience, please reach out through our official project repository. Community contributions, whether in the form of code, documentation, translations, or bug reports, are always welcome and appreciated.</p>
+
+                <p style="color:var(--text-3);font-size:11px;margin-top:24px;padding-top:12px;border-top:1px solid var(--border)">© 2026 ChocolatePy. All rights reserved. ChocolatePy and the ChocolatePy logo are trademarks of ChocolatePy. Python is a registered trademark of the Python Software Foundation. All other trademarks are the property of their respective owners.</p>
+            </div>
+            <div class="about-content" id="tosContent" style="display:none">
+                <h3>Terms of Service</h3>
+                <p><em>Effective Date: February 1, 2026 &nbsp;|&nbsp; Last Updated: February 12, 2026</em></p>
+                <p>Please read these Terms of Service (&ldquo;Terms&rdquo;, &ldquo;Agreement&rdquo;) carefully before using the ChocolatePy integrated development environment (&ldquo;Service&rdquo;, &ldquo;IDE&rdquo;, &ldquo;Application&rdquo;) operated by ChocolatePy (&ldquo;us&rdquo;, &ldquo;we&rdquo;, &ldquo;our&rdquo;). Your access to and use of the Service is conditioned upon your acceptance of and compliance with these Terms. These Terms apply to all visitors, users, and others who wish to access or use the Service.</p>
+                <p><strong>By accessing or using the Service, you agree to be bound by these Terms. If you disagree with any part of these Terms, then you do not have permission to access the Service.</strong></p>
+
+                <h4>1. Definitions</h4>
+                <p>For the purposes of these Terms of Service:</p>
+                <ul>
+                    <li><strong>&ldquo;User&rdquo;</strong> refers to any individual who accesses or uses the ChocolatePy IDE.</li>
+                    <li><strong>&ldquo;Content&rdquo;</strong> refers to any code, text, data, files, or other materials created, uploaded, or processed through the Service.</li>
+                    <li><strong>&ldquo;Service&rdquo;</strong> refers to the ChocolatePy browser-based integrated development environment, including all its features, tools, and functionalities.</li>
+                    <li><strong>&ldquo;Third-Party Services&rdquo;</strong> refers to external libraries, CDNs, and services loaded by the Application, including but not limited to Pyodide, CodeMirror, and Google Fonts.</li>
+                    <li><strong>&ldquo;Local Storage&rdquo;</strong> refers to the browser&rsquo;s Web Storage API (localStorage) used by the Application to persist user data on the User&rsquo;s device.</li>
+                </ul>
+
+                <h4>2. Description of Service</h4>
+                <p>ChocolatePy is a browser-based Python integrated development environment that provides code editing, execution, debugging, and project management capabilities. The Service operates entirely within the User&rsquo;s web browser using WebAssembly technology (Pyodide) for Python code execution. No server-side code execution is performed; all computational operations occur locally on the User&rsquo;s device.</p>
+                <p>The Service includes, but is not limited to, the following features: source code editing with syntax highlighting, Python code execution, file management, theme customization, code autocompletion, variable inspection, execution history tracking, code formatting, and print/export functionality.</p>
+
+                <h4>3. Eligibility</h4>
+                <p>The Service is available to individuals of all ages. If you are under the age of 13 (or the minimum age of digital consent in your jurisdiction), you may use the Service only with the consent and supervision of a parent or legal guardian. By using the Service, you represent and warrant that you have the legal capacity to enter into this Agreement, or that your use is supervised by a parent or guardian who agrees to these Terms on your behalf.</p>
+
+                <h4>4. User Accounts &amp; Registration</h4>
+                <p>The Service does not currently require account registration or authentication. All user data is stored locally in the browser&rsquo;s localStorage. As no accounts are created, there are no account-related obligations. However, if account functionality is introduced in a future version, additional terms may apply and will be communicated to users prior to implementation.</p>
+
+                <h4>5. Acceptable Use Policy</h4>
+                <p>You agree to use the Service only for lawful purposes and in a manner consistent with these Terms. Specifically, you agree not to:</p>
+                <ul>
+                    <li>Use the Service to develop, test, or distribute malicious software, including but not limited to viruses, worms, trojans, ransomware, or any other code designed to cause harm to computer systems or data.</li>
+                    <li>Use the Service to engage in any activity that violates applicable local, state, national, or international laws or regulations.</li>
+                    <li>Attempt to interfere with, disrupt, or reverse-engineer the Service, its underlying technologies, or any third-party services it relies upon.</li>
+                    <li>Use the Service to process, store, or transmit content that infringes upon the intellectual property rights of any third party.</li>
+                    <li>Attempt to circumvent any security features, access controls, or usage limitations implemented within the Service.</li>
+                    <li>Use the Service in any manner that could damage, disable, overburden, or impair any aspect of the Service, including its client-side execution environment.</li>
+                    <li>Use automated scripts, bots, or other tools to interact with the Service in a manner not intended by its design.</li>
+                </ul>
+
+                <h4>6. User Content &amp; Intellectual Property</h4>
+                <p><strong>Your Content.</strong> You retain full ownership of and all intellectual property rights to any code, text, data, or other content you create, write, or process using the Service (&ldquo;User Content&rdquo;). ChocolatePy does not claim any ownership interest in your User Content. Since all User Content is stored locally on your device and is never transmitted to our servers, we have no access to, control over, or responsibility for your User Content.</p>
+                <p><strong>Our Intellectual Property.</strong> The Service, including its original design, user interface, graphics, layout, code architecture, and documentation, is the intellectual property of ChocolatePy and is protected by applicable copyright, trademark, and other intellectual property laws. The ChocolatePy name, logo, and all related names, logos, product and service names, designs, and slogans are trademarks of ChocolatePy. You may not use such marks without our prior written permission.</p>
+                <p><strong>Open-Source Components.</strong> The Service incorporates open-source software components, each governed by their respective licenses. These include, but are not limited to, Pyodide (Mozilla Public License 2.0), CodeMirror (MIT License), and various Python packages with their own licensing terms. Your use of these components is subject to their respective license agreements.</p>
+                <p><strong>Feedback.</strong> If you provide us with any feedback, suggestions, or ideas regarding the Service (&ldquo;Feedback&rdquo;), you grant us a non-exclusive, worldwide, perpetual, irrevocable, royalty-free license to use, modify, and incorporate such Feedback into the Service without any obligation to you.</p>
+
+                <h4>7. Data Storage &amp; Persistence</h4>
+                <p>All user data, including source code files, editor preferences, themes, snippets, execution history, and configuration settings, is stored exclusively in your browser&rsquo;s localStorage on your local device. You acknowledge and agree that:</p>
+                <ul>
+                    <li>Clearing your browser data, cache, or cookies may result in the permanent and irreversible loss of all data stored by the Service.</li>
+                    <li>Browser localStorage has size limitations (typically 5&ndash;10 MB depending on the browser) and is not intended for large-scale data storage.</li>
+                    <li>You are solely responsible for creating backups of any important data, code, or files created within the Service.</li>
+                    <li>ChocolatePy is not responsible for any data loss resulting from browser actions, device failures, browser updates, or any other circumstances beyond our control.</li>
+                    <li>Using the Service in a private/incognito browser window will result in all data being lost when the window is closed.</li>
+                    <li>Different browsers on the same device maintain separate localStorage, and data does not synchronize between them.</li>
+                </ul>
+
+                <h4>8. Third-Party Services &amp; External Resources</h4>
+                <p>The Service loads and utilizes resources from third-party content delivery networks (CDNs) and services. These include:</p>
+                <ul>
+                    <li><strong>Pyodide</strong> (served via cdn.jsdelivr.net) &mdash; Provides the Python runtime environment via WebAssembly.</li>
+                    <li><strong>CodeMirror</strong> (served via cdnjs.cloudflare.com) &mdash; Provides the code editor component and its extensions.</li>
+                    <li><strong>Google Fonts</strong> (served via fonts.googleapis.com and fonts.gstatic.com) &mdash; Provides the Inter and JetBrains Mono typefaces.</li>
+                </ul>
+                <p>These third-party services are governed by their own terms of service and privacy policies. We do not control and are not responsible for the content, privacy policies, or practices of any third-party services. You acknowledge and agree that ChocolatePy shall not be responsible or liable, directly or indirectly, for any damage or loss caused or alleged to be caused by or in connection with the use of or reliance on any such third-party services.</p>
+                <p>The availability of the Service depends on the availability of these third-party CDNs. If these services experience downtime or discontinuation, the functionality of ChocolatePy may be affected.</p>
+
+                <h4>9. Code Execution &amp; Safety</h4>
+                <p>The Service allows you to write and execute Python code directly in your browser. You acknowledge and agree that:</p>
+                <ul>
+                    <li>All code execution occurs locally within your browser&rsquo;s sandbox environment using WebAssembly technology.</li>
+                    <li>While the browser sandbox provides significant security isolation, you should exercise the same caution when executing code as you would in any development environment.</li>
+                    <li>You are solely responsible for the code you write and execute, including any consequences that may result from its execution.</li>
+                    <li>The Service does not validate, review, or audit code before execution. It is your responsibility to understand and review the effects of any code you run.</li>
+                    <li>Computationally intensive code may cause your browser tab to become unresponsive or consume significant system resources.</li>
+                    <li>Infinite loops or memory-intensive operations may require you to close the browser tab to recover.</li>
+                </ul>
+
+                <h4>10. Disclaimer of Warranties</h4>
+                <p><strong>THE SERVICE IS PROVIDED ON AN &ldquo;AS IS&rdquo; AND &ldquo;AS AVAILABLE&rdquo; BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, OR COURSE OF PERFORMANCE.</strong></p>
+                <p>ChocolatePy, its subsidiaries, affiliates, and its licensors do not warrant that:</p>
+                <ul>
+                    <li>The Service will function uninterrupted, securely, or be available at any particular time or location.</li>
+                    <li>Any errors or defects will be corrected.</li>
+                    <li>The Service is free of viruses or other harmful components.</li>
+                    <li>The results of using the Service will meet your requirements or expectations.</li>
+                    <li>Code executed through the Service will produce accurate, reliable, or complete results.</li>
+                    <li>The Service will be compatible with all browsers, devices, or operating systems.</li>
+                </ul>
+
+                <h4>11. Limitation of Liability</h4>
+                <p><strong>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL CHOCOLATEPY, ITS DIRECTORS, EMPLOYEES, PARTNERS, AGENTS, SUPPLIERS, OR AFFILIATES BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM:</strong></p>
+                <ul>
+                    <li>Your access to or use of, or inability to access or use, the Service.</li>
+                    <li>Any conduct or content of any third party on or related to the Service.</li>
+                    <li>Any content obtained from the Service.</li>
+                    <li>Unauthorized access, use, or alteration of your transmissions or content.</li>
+                    <li>Loss of data stored in localStorage due to browser behavior, user action, or any other cause.</li>
+                    <li>Errors in code execution, compilation, or output produced by the Python runtime.</li>
+                </ul>
+                <p>The foregoing limitation of liability shall apply to the fullest extent permitted by law in the applicable jurisdiction.</p>
+
+                <h4>12. Indemnification</h4>
+                <p>You agree to defend, indemnify, and hold harmless ChocolatePy and its licensors, licensees, service providers, employees, agents, officers, and directors from and against any claims, damages, obligations, losses, liabilities, costs, or debt arising from: (a) your use of and access to the Service; (b) your violation of any term of these Terms; (c) your violation of any third-party right, including without limitation any copyright, property, or privacy right; or (d) any claim that your User Content caused damage to a third party.</p>
+
+                <h4>13. Modifications to the Service</h4>
+                <p>We reserve the right to withdraw, modify, or update the Service, or any portion thereof, at any time without prior notice. We shall not be liable to you or to any third party for any modification, suspension, or discontinuance of the Service. Feature availability, design elements, and functionality may change between versions.</p>
+
+                <h4>14. Termination</h4>
+                <p>Since the Service does not require user accounts, there is no formal termination process. However, we reserve the right to restrict access to the Service at our sole discretion, without notice or liability, for any reason whatsoever. All provisions of the Terms which by their nature should survive termination shall survive, including, without limitation, ownership provisions, warranty disclaimers, indemnity, and limitations of liability.</p>
+
+                <h4>15. Governing Law &amp; Dispute Resolution</h4>
+                <p>These Terms shall be governed and construed in accordance with the laws of the jurisdiction in which ChocolatePy operates, without regard to its conflict of law provisions. Any dispute arising out of or relating to these Terms or the Service shall first be attempted to be resolved through good-faith informal negotiation. If the dispute is not resolved through informal negotiation within 30 days, either party may pursue resolution through binding arbitration or, where applicable, in a court of competent jurisdiction.</p>
+
+                <h4>16. Severability</h4>
+                <p>If any provision of these Terms is held to be unenforceable or invalid by a court of competent jurisdiction, such provision shall be modified and interpreted to accomplish the objectives of such provision to the greatest extent possible under applicable law, and the remaining provisions shall continue in full force and effect.</p>
+
+                <h4>17. Waiver</h4>
+                <p>The failure of ChocolatePy to exercise or enforce any right or provision of these Terms shall not constitute a waiver of such right or provision. No waiver of any term of these Terms shall be deemed a further or continuing waiver of such term or any other term.</p>
+
+                <h4>18. Entire Agreement</h4>
+                <p>These Terms constitute the entire agreement between you and ChocolatePy regarding the use of the Service and supersede all prior agreements, representations, and understandings, whether written or oral, relating to the subject matter herein.</p>
+
+                <h4>19. Changes to These Terms</h4>
+                <p>We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material, we will provide notice within the Service at least 30 days prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion. By continuing to access or use our Service after any revisions become effective, you agree to be bound by the revised terms.</p>
+
+                <h4>20. Contact Information</h4>
+                <p>If you have any questions about these Terms of Service, please contact us through our official project repository or by email at the contact address published on our website. We aim to respond to all inquiries within 5 business days.</p>
+
+                <p style="color:var(--text-3);font-size:11px;margin-top:24px;padding-top:12px;border-top:1px solid var(--border)">These Terms of Service are effective as of February 1, 2026. By using ChocolatePy, you acknowledge that you have read, understood, and agree to be bound by these Terms.</p>
+            </div>
+
+            <div class="about-content" id="privacyContent" style="display:none">
+                <h3>Privacy Policy</h3>
+                <p><em>Effective Date: February 1, 2026 &nbsp;|&nbsp; Last Updated: February 12, 2026</em></p>
+                <p>ChocolatePy (&ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;us&rdquo;) is committed to protecting your privacy and ensuring transparency about how our Service operates. This Privacy Policy describes how information is handled when you use the ChocolatePy integrated development environment (the &ldquo;Service&rdquo;). We encourage you to read this policy carefully to understand our practices regarding your data.</p>
+                <p><strong>Summary: ChocolatePy is fundamentally designed as a privacy-first application. We do not collect, process, store, or transmit your personal information to any server. All data remains on your local device.</strong></p>
+
+                <h4>1. Information We Collect</h4>
+                <p><strong>1.1 Personal Information.</strong> ChocolatePy does not collect any personally identifiable information (PII). We do not require registration, login, email addresses, names, or any other personal identifiers to use the Service. There is no account creation process, and we do not maintain any user databases.</p>
+                <p><strong>1.2 Usage Data.</strong> ChocolatePy does not collect usage analytics, telemetry data, crash reports, performance metrics, or behavioral data of any kind. We do not track which features you use, how often you use the Service, or any aspect of your interaction with the application.</p>
+                <p><strong>1.3 User-Generated Content.</strong> Any code, files, or content you create within ChocolatePy is stored exclusively in your browser&rsquo;s localStorage on your local device. This content is never transmitted to, accessed by, or visible to ChocolatePy or any third party through our Service.</p>
+
+                <h4>2. Local Data Storage</h4>
+                <p>The Service uses your browser&rsquo;s Web Storage API (localStorage) to persist the following types of data on your local device:</p>
+                <ul>
+                    <li><strong>Source Code Files</strong> &mdash; All Python scripts and other files you create or import are stored under the key <code>chocolatepy_files</code>.</li>
+                    <li><strong>Active File Identifier</strong> &mdash; The name of your currently open file is stored under <code>chocolatepy_active</code>.</li>
+                    <li><strong>Code Snippets</strong> &mdash; User-created code snippet templates are stored under <code>chocolatepy_snippets</code>.</li>
+                    <li><strong>Theme Preferences</strong> &mdash; Your selected or custom color theme is stored under <code>chocolatepy_theme</code>.</li>
+                    <li><strong>Layout Configuration</strong> &mdash; Panel sizes, sidebar width, and UI layout preferences are stored under <code>chocolatepy_layout</code>.</li>
+                    <li><strong>Autocomplete Data</strong> &mdash; Frequency data for intelligent code completion is stored under <code>chocolatepy_autocomplete_freq</code>.</li>
+                    <li><strong>Execution History</strong> &mdash; Records of previous code executions are stored under <code>chocolatepy_history</code>.</li>
+                    <li><strong>Welcome Screen Preference</strong> &mdash; Whether you&rsquo;ve chosen to hide the welcome screen is stored under <code>chocolatepy_no_welcome</code>.</li>
+                </ul>
+                <p><strong>Important:</strong> This data is stored only on your device, within the specific browser you are using. It is not synchronized across devices, browsers, or browser profiles. Clearing your browser data (cache, cookies, site data) will permanently delete all stored data. Using the Service in a private/incognito browsing session will result in all data being discarded when the session ends.</p>
+                <p>We strongly recommend that you regularly back up any important code or data by using the Service&rsquo;s export/download features, as we cannot recover lost localStorage data under any circumstances.</p>
+
+                <h4>3. Third-Party Services &amp; Network Requests</h4>
+                <p>While ChocolatePy itself does not collect data, the Service loads resources from third-party content delivery networks (CDNs) when the application is first loaded. These network requests are necessary for the Service to function and may be subject to the privacy practices of the respective CDN operators.</p>
+                <p><strong>3.1 The following external resources are loaded:</strong></p>
+                <ul>
+                    <li>
+                        <strong>Pyodide (Python Runtime)</strong><br>
+                        Served from: <code>cdn.jsdelivr.net</code><br>
+                        Purpose: Provides the CPython interpreter compiled to WebAssembly for in-browser Python execution.<br>
+                        Operator: jsDelivr (Prospect One)<br>
+                        Privacy Policy: <a href="https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net" target="_blank" style="color:var(--grape)">jsDelivr Privacy Policy</a>
+                    </li>
+                    <li>
+                        <strong>CodeMirror (Code Editor)</strong><br>
+                        Served from: <code>cdnjs.cloudflare.com</code><br>
+                        Purpose: Provides the code editor component with syntax highlighting, autocompletion, and editing features.<br>
+                        Operator: Cloudflare, Inc.<br>
+                        Privacy Policy: <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" style="color:var(--grape)">Cloudflare Privacy Policy</a>
+                    </li>
+                    <li>
+                        <strong>Google Fonts (Typefaces)</strong><br>
+                        Served from: <code>fonts.googleapis.com</code> and <code>fonts.gstatic.com</code><br>
+                        Purpose: Provides the Inter (UI) and JetBrains Mono (code) typefaces.<br>
+                        Operator: Google LLC<br>
+                        Privacy Policy: <a href="https://policies.google.com/privacy" target="_blank" style="color:var(--grape)">Google Privacy Policy</a><br>
+                        Additional Info: <a href="https://developers.google.com/fonts/faq/privacy" target="_blank" style="color:var(--grape)">Google Fonts Privacy FAQ</a>
+                    </li>
+                </ul>
+                <p><strong>3.2 What CDNs may collect:</strong> When your browser loads resources from these CDNs, the CDN providers may log standard HTTP request data, which can include your IP address, browser user-agent string, referring URL, and timestamp. This data collection is governed by the respective CDN provider&rsquo;s privacy policy and is outside of ChocolatePy&rsquo;s control. We encourage you to review the privacy policies linked above.</p>
+                <p><strong>3.3 No additional network requests.</strong> Beyond the initial loading of these external resources, ChocolatePy does not make any network requests. Code execution, file management, and all IDE operations occur entirely offline after the initial page load. You can verify this using your browser&rsquo;s developer tools (Network tab).</p>
+
+                <h4>4. Cookies &amp; Tracking Technologies</h4>
+                <p><strong>4.1 Cookies.</strong> ChocolatePy does not set, read, or use any cookies (neither first-party nor third-party). The Service does not use session cookies, persistent cookies, or any cookie-based tracking mechanisms.</p>
+                <p><strong>4.2 Web Beacons &amp; Pixels.</strong> The Service does not use web beacons, tracking pixels, clear GIFs, or similar tracking technologies.</p>
+                <p><strong>4.3 Fingerprinting.</strong> The Service does not engage in browser fingerprinting or device fingerprinting of any kind.</p>
+                <p><strong>4.4 Analytics.</strong> The Service does not integrate any analytics platforms (such as Google Analytics, Mixpanel, Amplitude, Segment, or similar services). No usage data is collected or transmitted.</p>
+                <p><strong>4.5 Advertising.</strong> The Service does not display advertisements and does not integrate any advertising networks, ad tracking, or retargeting technologies.</p>
+                <p><em>Note:</em> Third-party CDNs from which resources are loaded may set their own cookies according to their respective policies. Consult the privacy policies linked in Section 3 for details.</p>
+
+                <h4>5. Data Sharing &amp; Disclosure</h4>
+                <p>Since ChocolatePy does not collect any user data, there is no data to share with, sell to, rent to, or disclose to third parties. We do not:</p>
+                <ul>
+                    <li>Sell personal information to third parties.</li>
+                    <li>Share data with advertising networks.</li>
+                    <li>Provide data to data brokers or information resellers.</li>
+                    <li>Disclose data to government agencies (as we possess no data to disclose).</li>
+                    <li>Transfer data to affiliates, subsidiaries, or business partners.</li>
+                    <li>Use data for profiling, automated decision-making, or AI/ML model training.</li>
+                </ul>
+
+                <h4>6. Data Security</h4>
+                <p>Because all data is stored locally in your browser, the security of your data depends on the security of your device and browser. We recommend the following best practices:</p>
+                <ul>
+                    <li>Keep your browser and operating system updated with the latest security patches.</li>
+                    <li>Use a device password or biometric lock to prevent unauthorized physical access.</li>
+                    <li>Be cautious about browser extensions that may access localStorage data.</li>
+                    <li>Regularly back up important code using the Service&rsquo;s export features.</li>
+                    <li>Avoid using the Service on shared or public computers where others may access your browser data.</li>
+                </ul>
+                <p>The Service runs all code within the browser&rsquo;s WebAssembly sandbox, which provides a layer of isolation from the host operating system. However, no system can guarantee absolute security, and you use the Service at your own risk.</p>
+
+                <h4>7. Children&rsquo;s Privacy</h4>
+                <p>ChocolatePy is designed to be a safe, educational tool appropriate for users of all ages, including children under 13 (or the applicable age of digital consent in your jurisdiction). Because the Service does not collect any personal information whatsoever, there are no specific children&rsquo;s privacy concerns under the Children&rsquo;s Online Privacy Protection Act (COPPA), the General Data Protection Regulation (GDPR), the UK Age Appropriate Design Code, or similar child protection regulations.</p>
+                <p>Parents and educators can feel confident that children&rsquo;s personal information is not being collected, stored, or shared when using ChocolatePy. If you are a parent or guardian and have concerns about your child&rsquo;s use of the Service, please contact us using the information provided below.</p>
+
+                <h4>8. International Data Considerations</h4>
+                <p>Since ChocolatePy does not collect, process, or transfer personal data, there are no cross-border data transfer issues. However, when your browser loads resources from third-party CDNs (Section 3), those requests may be routed through servers in various countries depending on the CDN&rsquo;s infrastructure. The CDN providers&rsquo; respective privacy policies govern how they handle any data associated with those requests.</p>
+                <p>For users in the European Economic Area (EEA), United Kingdom, or other jurisdictions with data protection laws: since no personal data is processed by ChocolatePy, the provisions of the GDPR, UK GDPR, or equivalent regulations regarding consent, data subject rights, Data Protection Officers, and Data Protection Impact Assessments do not apply to ChocolatePy&rsquo;s own operations.</p>
+
+                <h4>9. Your Rights</h4>
+                <p>Although ChocolatePy does not collect personal data, we support the principles behind data protection rights. You have full control over all data stored by the Service:</p>
+                <ul>
+                    <li><strong>Right to Access:</strong> You can view all data stored by ChocolatePy by accessing your browser&rsquo;s developer tools (Application &gt; Local Storage).</li>
+                    <li><strong>Right to Delete:</strong> You can delete all data stored by ChocolatePy at any time by clearing your browser&rsquo;s site data for the domain on which ChocolatePy is hosted, or by using your browser&rsquo;s &ldquo;Clear browsing data&rdquo; feature.</li>
+                    <li><strong>Right to Export:</strong> You can export your code and data using the Service&rsquo;s built-in export and print features.</li>
+                    <li><strong>Right to Restrict Processing:</strong> Since all processing occurs locally on your device, you have inherent control over all processing activities.</li>
+                </ul>
+
+                <h4>10. Do Not Track (DNT) Signals</h4>
+                <p>ChocolatePy honors Do Not Track signals by default &mdash; not because we detect them, but because we do not track users in any way regardless of DNT settings. There is no tracking behavior to disable.</p>
+
+                <h4>11. California Privacy Rights (CCPA/CPRA)</h4>
+                <p>Under the California Consumer Privacy Act (CCPA) and the California Privacy Rights Act (CPRA), California residents have specific rights regarding their personal information. Since ChocolatePy does not collect, sell, or share personal information as defined under these laws, these provisions do not create additional obligations. However, we affirm that we do not sell or share personal information, and we do not use sensitive personal information for purposes beyond what is necessary to provide the Service.</p>
+
+                <h4>12. Changes to This Privacy Policy</h4>
+                <p>We may update this Privacy Policy from time to time to reflect changes in our practices, technologies, legal requirements, or other factors. If we make material changes, we will provide notice within the Service (for example, through a toast notification or a notice on the welcome screen) prior to the changes taking effect. The &ldquo;Last Updated&rdquo; date at the top of this policy indicates when it was most recently revised.</p>
+                <p>We encourage you to review this Privacy Policy periodically to stay informed about how we are protecting your privacy. Your continued use of the Service after the posting of changes constitutes your acceptance of such changes.</p>
+
+                <h4>13. Contact Us</h4>
+                <p>If you have any questions, concerns, or requests regarding this Privacy Policy or ChocolatePy&rsquo;s privacy practices, please contact us through one of the following channels:</p>
+                <ul>
+                    <li><strong>Project Repository:</strong> Open an issue on our official GitHub repository.</li>
+                    <li><strong>Email:</strong> Contact us at the email address published on our project website.</li>
+                </ul>
+                <p>We take all privacy inquiries seriously and aim to respond within 5 business days. If you believe that your privacy has been compromised in any way related to your use of ChocolatePy, please contact us immediately so we can investigate and address your concerns.</p>
+
+                <h4>14. Supplementary Information</h4>
+                <p><strong>Data Retention:</strong> Since we do not collect data, there is no data retention period. Data stored in your browser&rsquo;s localStorage persists until you manually clear it or until the browser&rsquo;s storage limits are reached.</p>
+                <p><strong>Automated Decision-Making:</strong> The Service does not engage in automated decision-making or profiling that produces legal effects or similarly significantly affects users.</p>
+                <p><strong>Data Protection Officer:</strong> Given that ChocolatePy does not process personal data, we have not appointed a Data Protection Officer. For privacy inquiries, please use the contact methods described in Section 13.</p>
+
+                <p style="color:var(--text-3);font-size:11px;margin-top:24px;padding-top:12px;border-top:1px solid var(--border)">This Privacy Policy is effective as of February 1, 2026. By using ChocolatePy, you acknowledge that you have read and understood this Privacy Policy. ChocolatePy is committed to maintaining the highest standards of user privacy and data protection.</p>
+            </div>
+        </div>
+        <div style="padding:12px 20px;border-top:1px solid var(--border);text-align:right">
+            <button class="snippet-action-btn primary" onclick="closeAbout()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- THEME EDITOR MODAL -->
+<div class="modal-ov" id="themeOv" onclick="closeThemeEditor(event)">
+    <div class="theme-modal" onclick="event.stopPropagation()">
+        <div class="theme-header">
+            <span class="theme-title">Theme Editor</span>
+            <div style="display:flex;gap:6px">
+                <button class="snippet-action-btn" onclick="exportTheme()">Export Theme</button>
+                <button class="snippet-action-btn" onclick="document.getElementById('themeImportFile').click()">Import Theme</button>
+                <input type="file" id="themeImportFile" accept=".json" style="display:none" onchange="importTheme(event)">
+                <button class="snippet-action-btn" onclick="resetTheme()">Reset Default</button>
+            </div>
+        </div>
+        <div class="theme-body">
+            <div class="theme-presets">
+                <div class="theme-presets-title">Presets</div>
+                <div class="theme-preset-list" id="themePresetList"></div>
+            </div>
+            <div class="theme-colors">
+                <div class="theme-section-title">Colors</div>
+                <div class="theme-color-grid" id="themeColorGrid"></div>
+                <div class="theme-section-title" style="margin-top:16px">Theme Name</div>
+                <input type="text" id="themeName" class="snip-input" placeholder="My Custom Theme" value="Custom Theme">
+            </div>
+            <div class="theme-preview">
+                <div class="theme-section-title">Preview</div>
+                <div class="theme-preview-box" id="themePreviewBox">
+                    <div class="tp-titlebar">ChocolatePy</div>
+                    <div class="tp-topbar">Explorer | Search | Run</div>
+                    <div class="tp-editor">
+                        <span class="tp-kw">def</span> <span class="tp-fn">hello</span>():<br>
+                        &nbsp;&nbsp;<span class="tp-kw">print</span>(<span class="tp-str">"world"</span>)
+                    </div>
+                    <div class="tp-statusbar">Ready</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/search.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/jump-to-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/indent-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/mark-selection.min.js"></script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+let pyodide=null, editor=null, isRunning=false, outputLines=0;
+const SK='chocolatepy_files', AK='chocolatepy_active';
+
+const DEFAULT_CODE=`# ChocolatePy — Math IDE
+# A beautiful math-focused Python environment.
+# Press Ctrl+Enter to run.
+
+import math
+
+# ── Quadratic formula solver ──────────────
+def quadratic(a, b, c):
+    """Solve ax² + bx + c = 0"""
+    discriminant = b**2 - 4*a*c
+    if discriminant < 0:
+        real = -b / (2*a)
+        imag = math.sqrt(-discriminant) / (2*a)
+        return (complex(real, imag), complex(real, -imag))
+    x1 = (-b + math.sqrt(discriminant)) / (2*a)
+    x2 = (-b - math.sqrt(discriminant)) / (2*a)
+    return (x1, x2)
+
+# Solve: 2x² - 4x - 6 = 0
+roots = quadratic(2, -4, -6)
+print(f"Roots: x₁ = {roots[0]}, x₂ = {roots[1]}")
+
+# ── Useful constants ──────────────────────
+print(f"\\nπ  = {math.pi}")
+print(f"e  = {math.e}")
+print(f"τ  = {math.tau}")
+print(f"φ  = {(1 + math.sqrt(5)) / 2:.10f}")
+
+# ── Quick stats ───────────────────────────
+data = [4, 8, 15, 16, 23, 42]
+mean = sum(data) / len(data)
+variance = sum((x - mean)**2 for x in data) / len(data)
+std_dev = math.sqrt(variance)
+
+print(f"\\nData:     {data}")
+print(f"Mean:     {mean:.2f}")
+print(f"Std Dev:  {std_dev:.2f}")
+`;
+
+/* ── File management ── */
+let files={}, activeFile='';
+
+function loadFiles(){
+    try{ const r=localStorage.getItem(SK); if(r) files=JSON.parse(r); activeFile=localStorage.getItem(AK)||''; }catch(e){ files={}; }
+    if(!Object.keys(files).length){ files['main.py']=DEFAULT_CODE; activeFile='main.py'; }
+    if(!files[activeFile]) activeFile=Object.keys(files)[0];
+}
+function saveFiles(){
+    const s={};
+    for(const[n,c]of Object.entries(files)){
+        // Skip empty untitled files
+        if(c.trim()==='' && n.startsWith('untitled')) continue;
+        s[n]=c;
+    }
+    localStorage.setItem(SK,JSON.stringify(s));
+    localStorage.setItem(AK,activeFile);
+}
+function renderTabs(){
+    const bar=document.getElementById('tabsBar');
+    const add=bar.querySelector('.tab-add');
+    bar.querySelectorAll('.tab').forEach(t=>t.remove());
+    Object.keys(files).forEach(n=>{
+        const t=document.createElement('div');
+        t.className='tab'+(n===activeFile?' active':'');
+        t.draggable=true;
+        t.dataset.file=n;
+        t.innerHTML=`<span style="opacity:.7;display:flex;align-items:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg></span><span>${n}</span><span class="dot"></span><span class="tab-close" onclick="event.stopPropagation();closeFile('${n}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>`;
+        t.onclick=()=>switchFile(n);
+        t.ondragstart=(e)=>{e.dataTransfer.setData('text/plain',n);t.classList.add('tab-dragging');};
+        t.ondragend=()=>{t.classList.remove('tab-dragging');};
+        t.ondragover=(e)=>{e.preventDefault();t.classList.add('tab-drag-over');};
+        t.ondragleave=()=>{t.classList.remove('tab-drag-over');};
+        t.ondrop=(e)=>{e.preventDefault();t.classList.remove('tab-drag-over');reorderFile(e.dataTransfer.getData('text/plain'),n);};
+        bar.insertBefore(t,add);
+    });
+}
+function renderFileList(){
+    const list=document.getElementById('fileList');
+    list.innerHTML='';
+    Object.keys(files).forEach(n=>{
+        const d=document.createElement('div');
+        d.className='fi'+(n===activeFile?' active':'');
+        d.draggable=true;
+        d.dataset.file=n;
+        d.innerHTML=`<span class="fi-icon">${getFileIcon(n)}</span><span class="fi-name">${n}</span>`;
+        d.onclick=()=>switchFile(n);
+        d.ondblclick=(e)=>{e.stopPropagation();startRename(d,n);};
+        d.ondragstart=(e)=>{e.dataTransfer.setData('text/plain',n);d.classList.add('dragging');};
+        d.ondragend=()=>{d.classList.remove('dragging');};
+        d.ondragover=(e)=>{e.preventDefault();d.classList.add('drag-over');};
+        d.ondragleave=()=>{d.classList.remove('drag-over');};
+        d.ondrop=(e)=>{e.preventDefault();d.classList.remove('drag-over');reorderFile(e.dataTransfer.getData('text/plain'),n);};
+        list.appendChild(d);
+    });
+}
+function switchFile(n){
+    if(!files.hasOwnProperty(n)) return;
+    if(activeFile && editor) files[activeFile]=editor.getValue();
+    activeFile=n;
+    editor.setValue(files[n]);
+    editor.clearHistory();
+    editor.setCursor(0,0);
+    document.getElementById('titleFile').textContent=n;
+    renderTabs(); renderFileList(); saveFiles();
+}
+function newFile(){
+    let i=1; while(files[`untitled-${i}.py`]) i++;
+    const n=`untitled-${i}.py`;
+    files[n]='';
+    switchFile(n);
+}
+function closeFile(n){
+    if(Object.keys(files).length<=1) return;
+    delete files[n];
+    if(activeFile===n) activeFile=Object.keys(files)[0];
+    switchFile(activeFile); saveFiles();
+}
+function clearAll(){
+    localStorage.removeItem(SK); localStorage.removeItem(AK);
+    files={'main.py':DEFAULT_CODE}; activeFile='main.py';
+    switchFile(activeFile); closeDDs();
+}
+
+/* ============================================================
+   AUTOCOMPLETE — Math-focused
+   ============================================================ */
+/* ============================================================
+   GENIUS AUTOCOMPLETE ENGINE
+   ============================================================ */
+const COMPLETIONS=[
+    'math.pi','math.e','math.tau','math.inf','math.nan',
+    'math.sqrt(','math.pow(','math.exp(','math.log(','math.log2(','math.log10(',
+    'math.sin(','math.cos(','math.tan(','math.asin(','math.acos(','math.atan(','math.atan2(',
+    'math.sinh(','math.cosh(','math.tanh(',
+    'math.ceil(','math.floor(','math.trunc(',
+    'math.factorial(','math.comb(','math.perm(',
+    'math.gcd(','math.lcm(','math.isqrt(',
+    'math.degrees(','math.radians(',
+    'math.hypot(','math.dist(',
+    'math.fabs(','math.fmod(','math.fsum(',
+    'math.isfinite(','math.isinf(','math.isnan(',
+    'math.prod(','math.copysign(',
+    'abs(','round(','sum(','min(','max(','len(','range(','enumerate(',
+    'zip(','map(','filter(','sorted(','reversed(',
+    'print(','input(','type(','int(','float(','str(','list(','dict(','tuple(','set(',
+    'isinstance(','hasattr(','getattr(','complex(','divmod(','pow(',
+    'import ','from ','def ','class ','return ','yield ',
+    'if ','elif ','else:','for ','while ','break','continue',
+    'try:','except ','finally:','raise ','with ','as ',
+    'lambda ','pass','True','False','None','and ','or ','not ','in ','is ',
+    'import math','from math import ','import statistics','import random','import fractions','import decimal',
+    'print(f"','# ──','"""',
+    'statistics.mean(','statistics.median(','statistics.stdev(','statistics.variance(',
+    // Extended builtins
+    'all(','any(','bin(','bool(','bytearray(','bytes(','callable(','chr(','classmethod(',
+    'compile(','delattr(','dir(','exec(','eval(','format(','frozenset(','globals(',
+    'hash(','help(','hex(','id(','iter(','locals(','next(','object(','oct(',
+    'open(','ord(','property(','repr(','setattr(','slice(','staticmethod(',
+    'super(','vars(','__init__','__str__','__repr__','__len__','__getitem__','__setitem__',
+    // String methods
+    '.strip()','.lstrip()','.rstrip()','.split()','.join()','.replace(','.find(','.index(',
+    '.startswith(','.endswith(','.upper()','.lower()','.title()','.capitalize()',
+    '.isdigit()','.isalpha()','.isalnum()','.isspace()','.count(','.format(',
+    '.encode(','.decode(','.center(','.ljust(','.rjust(','.zfill(',
+    // List methods
+    '.append(','.extend(','.insert(','.remove(','.pop(','.clear()','.copy()',
+    '.sort()','.reverse()','.count(','.index(',
+    // Dict methods
+    '.keys()','.values()','.items()','.get(','.setdefault(','.update(','.pop(',
+    '.popitem()','.clear()','.copy()',
+    // Set methods
+    '.add(','.discard(','.union(','.intersection(','.difference(','.symmetric_difference(',
+    '.issubset(','.issuperset(',
+    // os module
+    'import os','os.path.join(','os.path.exists(','os.path.dirname(','os.path.basename(',
+    'os.listdir(','os.makedirs(','os.getcwd()','os.path.splitext(',
+    // json module
+    'import json','json.dumps(','json.loads(','json.dump(','json.load(',
+    // collections
+    'from collections import ','collections.Counter(','collections.defaultdict(','collections.OrderedDict(',
+    'collections.namedtuple(',
+    // itertools
+    'import itertools','itertools.chain(','itertools.combinations(','itertools.permutations(',
+    'itertools.product(','itertools.count(','itertools.cycle(','itertools.repeat(',
+    // functools
+    'import functools','functools.reduce(','functools.lru_cache','functools.partial(',
+    '@functools.lru_cache(maxsize=None)',
+    // typing
+    'from typing import ','List','Dict','Tuple','Optional','Union','Any','Callable',
+    // Common patterns
+    'if __name__ == "__main__":','def main():',
+    'from dataclasses import dataclass','@dataclass',
+    'raise ValueError(','raise TypeError(','raise NotImplementedError',
+    'assert ','global ','nonlocal ',
+    // Comprehensions & patterns
+    '{k: v for k, v in ','[x for x in ','(x for x in ','{x for x in ',
+    'with open(','lambda x: ',
+    // f-string patterns
+    'f"{','f"{\'','f"{:.2f}"','f"{:>10}"','f"{:<10}"','f"{:^10}"',
+    // numpy (common in math)
+    'import numpy as np','np.array(','np.zeros(','np.ones(','np.arange(',
+    'np.linspace(','np.reshape(','np.dot(','np.sum(','np.mean(','np.std(',
+    'np.max(','np.min(','np.sqrt(','np.abs(',
+];
+
+// Docstring hints for built-in functions
+const FUNC_DOCS = {
+    'print(': 'print(*objects, sep=" ", end="\\n")',
+    'range(': 'range(stop) or range(start, stop[, step])',
+    'len(': 'len(obj) → int',
+    'sorted(': 'sorted(iterable, key=None, reverse=False)',
+    'enumerate(': 'enumerate(iterable, start=0)',
+    'zip(': 'zip(*iterables) → iterator of tuples',
+    'map(': 'map(function, iterable, ...)',
+    'filter(': 'filter(function, iterable)',
+    'open(': 'open(file, mode="r", encoding=None)',
+    'math.sqrt(': 'sqrt(x) → square root of x',
+    'math.pow(': 'pow(x, y) → x raised to y',
+    'math.log(': 'log(x[, base]) → logarithm of x',
+    'math.sin(': 'sin(x) → sine of x radians',
+    'math.cos(': 'cos(x) → cosine of x radians',
+    'math.factorial(': 'factorial(n) → n!',
+    'math.comb(': 'comb(n, k) → C(n, k) combinations',
+    'math.gcd(': 'gcd(*integers) → greatest common divisor',
+    'round(': 'round(number[, ndigits]) → float',
+    'abs(': 'abs(x) → absolute value',
+    'sum(': 'sum(iterable[, start]) → total',
+    'min(': 'min(iterable) or min(a, b, ...)',
+    'max(': 'max(iterable) or max(a, b, ...)',
+    'int(': 'int(x=0) or int(x, base=10)',
+    'float(': 'float(x=0) → floating point',
+    'str(': 'str(object="") → string',
+    'list(': 'list([iterable]) → new list',
+    'dict(': 'dict(**kwargs) or dict(mapping)',
+    'set(': 'set([iterable]) → new set',
+    'input(': 'input([prompt]) → string',
+    'type(': 'type(object) → type of object',
+    'isinstance(': 'isinstance(obj, classinfo) → bool',
+    '.append(': 'list.append(item) → None',
+    '.extend(': 'list.extend(iterable) → None',
+    '.split(': 'str.split(sep=None, maxsplit=-1)',
+    '.join(': 'str.join(iterable) → joined string',
+    '.replace(': 'str.replace(old, new[, count])',
+    '.format(': 'str.format(*args, **kwargs)',
+    '.get(': 'dict.get(key[, default])',
+    'json.dumps(': 'json.dumps(obj, indent=None)',
+    'json.loads(': 'json.loads(s) → object',
+};
+
+// Track user-defined symbols for smart completion
+let userSymbols = { functions: [], classes: [], variables: [], imports: [] };
+
+function extractUserSymbols(code) {
+    userSymbols = { functions: [], classes: [], variables: [], imports: [] };
+    const lines = code.split('\n');
+    for (const line of lines) {
+        const trimmed = line.trim();
+        // Functions
+        let m = trimmed.match(/^def\s+([a-zA-Z_]\w*)\s*\((.*)\)/);
+        if (m) { userSymbols.functions.push({ name: m[1], args: m[2] }); continue; }
+        // Classes
+        m = trimmed.match(/^class\s+([a-zA-Z_]\w*)/);
+        if (m) { userSymbols.classes.push(m[1]); continue; }
+        // Imports: from X import Y
+        m = trimmed.match(/^from\s+(\S+)\s+import\s+(.+)/);
+        if (m) { m[2].split(',').forEach(s => userSymbols.imports.push(s.trim().split(' as ').pop())); continue; }
+        // Imports: import X
+        m = trimmed.match(/^import\s+(.+)/);
+        if (m) { m[1].split(',').forEach(s => userSymbols.imports.push(s.trim().split(' as ').pop())); continue; }
+        // Variable assignments (simple)
+        m = trimmed.match(/^([a-zA-Z_]\w*)\s*=(?!=)/);
+        if (m && !['if','else','elif','for','while','def','class','return','import','from'].includes(m[1])) {
+            if (!userSymbols.variables.includes(m[1])) userSymbols.variables.push(m[1]);
+        }
+    }
+}
+
+// Frequency tracker — remembers which completions you pick most
+const FREQ_KEY = 'chocolatepy_autocomplete_freq';
+let completionFreq = {};
+function loadFreq() { try { completionFreq = JSON.parse(localStorage.getItem(FREQ_KEY) || '{}'); } catch(e) { completionFreq = {}; } }
+function saveFreq() { localStorage.setItem(FREQ_KEY, JSON.stringify(completionFreq)); }
+function bumpFreq(item) { completionFreq[item] = (completionFreq[item] || 0) + 1; saveFreq(); }
+loadFreq();
+
+// Context-aware completion: knows what type of thing you're likely typing
+function getContext(cm) {
+    const cur = cm.getCursor();
+    const line = cm.getLine(cur.line);
+    const before = line.slice(0, cur.ch);
+    const allCode = cm.getValue();
+
+    // After "import " → suggest module names
+    if (/\bimport\s+$/.test(before) || /\bfrom\s+$/.test(before)) return 'import';
+    // After a dot → suggest methods/attributes
+    if (/\.$/.test(before)) return 'attribute';
+    // Inside a string → no completion
+    const tok = cm.getTokenAt(cur);
+    if (tok.type === 'string') return 'string';
+    // After "def " or "class " → no suggestions
+    if (/\b(def|class)\s+$/.test(before)) return 'naming';
+    // After : at end of line → indent suggestion handled elsewhere
+    // Starting a line → suggest keywords
+    if (/^\s*$/.test(before)) return 'statement';
+    // After = → suggest values/expressions
+    if (/=\s*$/.test(before)) return 'value';
+    // After ( → suggest arguments
+    if (/\(\s*$/.test(before)) return 'argument';
+
+    return 'general';
+}
+
+function mathHint(cm) {
+    const cur = cm.getCursor(), tok = cm.getTokenAt(cur);
+    let start = tok.start, word = tok.string;
+    const context = getContext(cm);
+
+    // Don't autocomplete in strings or when naming things
+    if (context === 'string' || context === 'naming') return;
+
+    // Handle dot access
+    if (word === '.') { const p = cm.getTokenAt({line: cur.line, ch: start}); word = p.string + '.'; start = p.start; }
+    else if (start > 0) {
+        const bf = cm.getRange({line: cur.line, ch: Math.max(0, start - 20)}, {line: cur.line, ch: start});
+        const di = bf.lastIndexOf('.');
+        if (di >= 0) { const px = bf.slice(Math.max(0, bf.lastIndexOf(' ', di) + 1)); word = px + word; start -= px.length; }
+    }
+    if (word.length < 1) return;
+
+    // Refresh user symbols from current code
+    extractUserSymbols(cm.getValue());
+
+    // Build candidate list from all sources
+    let candidates = [];
+
+    // 1. User-defined symbols (highest priority)
+    userSymbols.functions.forEach(f => candidates.push(f.name + '('));
+    userSymbols.classes.forEach(c => candidates.push(c + '('));
+    userSymbols.variables.forEach(v => candidates.push(v));
+    userSymbols.imports.forEach(i => candidates.push(i));
+
+    // 2. Static completions
+    candidates = candidates.concat(COMPLETIONS);
+
+    // 3. Deduplicate
+    candidates = [...new Set(candidates)];
+
+    // 4. Filter by prefix (fuzzy: supports camelCase/snake_case jumping)
+    const lw = word.toLowerCase();
+    let matches = candidates.filter(c => {
+        const lc = c.toLowerCase();
+        if (lc.startsWith(lw) && c !== word) return true;
+        // Fuzzy: all chars of word appear in order
+        if (word.length >= 2) {
+            let j = 0;
+            for (let i = 0; i < lc.length && j < lw.length; i++) {
+                if (lc[i] === lw[j]) j++;
+            }
+            return j === lw.length && c !== word;
+        }
+        return false;
+    });
+
+    // 5. Sort by: exact prefix first, then frequency, then alphabetical
+    matches.sort((a, b) => {
+        const aExact = a.toLowerCase().startsWith(lw) ? 0 : 1;
+        const bExact = b.toLowerCase().startsWith(lw) ? 0 : 1;
+        if (aExact !== bExact) return aExact - bExact;
+        const fa = completionFreq[a] || 0, fb = completionFreq[b] || 0;
+        if (fb !== fa) return fb - fa;
+        return a.localeCompare(b);
+    });
+
+    if (!matches.length) return;
+
+    // 6. Build rich hint objects with documentation
+    const hintList = matches.slice(0, 20).map(item => {
+        const doc = FUNC_DOCS[item] || '';
+        return {
+            text: item,
+            displayText: item + (doc ? '  — ' + doc : ''),
+            hint: (cm, data, completion) => {
+                cm.replaceRange(completion.text, data.from, data.to);
+                bumpFreq(completion.text);
+                // Auto-show parameter hint for functions
+                if (completion.text.endsWith('(')) {
+                    const funcDoc = FUNC_DOCS[completion.text];
+                    if (funcDoc) showParamHint(cm, funcDoc);
+                }
+            }
+        };
+    });
+
+    return { list: hintList, from: CodeMirror.Pos(cur.line, start), to: CodeMirror.Pos(cur.line, cur.ch) };
+}
+
+// Parameter hint tooltip
+let paramHintEl = null;
+function showParamHint(cm, text) {
+    removeParamHint();
+    const cursor = cm.cursorCoords(true, 'page');
+    paramHintEl = document.createElement('div');
+    paramHintEl.className = 'param-hint';
+    paramHintEl.textContent = text;
+    paramHintEl.style.left = cursor.left + 'px';
+    paramHintEl.style.top = (cursor.top - 28) + 'px';
+    document.body.appendChild(paramHintEl);
+    setTimeout(removeParamHint, 5000);
+}
+function removeParamHint() {
+    if (paramHintEl) { paramHintEl.remove(); paramHintEl = null; }
+}
+
+/* ============================================================
+   AUTOCORRECT
+   ============================================================ */
+const TYPOS={
+    'pirnt':'print','pritn':'print','prnt':'print',
+    'retrun':'return','reutrn':'return',
+    'improt':'import','ipmort':'import','imoprt':'import',
+    'defn':'def','calss':'class',
+    'flase':'False','Flase':'False','ture':'True','Ture':'True','noen':'None',
+    'eslif':'elif','elfi':'elif','whiel':'while',
+    'breack':'break','contniue':'continue',
+    'excpet':'except','finaly':'finally','lamda':'lambda','yeild':'yield',
+    'math.sqtr':'math.sqrt','math.squrt':'math.sqrt',
+};
+
+function autocorrect(cm,change){
+    if(change.origin==='setValue'||change.origin==='autocorrect') return;
+    const ins=change.text.join('');
+    if(!/[\s(:.\n]/.test(ins)&&ins!=='') return;
+    const cur=cm.getCursor(), line=cm.getLine(cur.line);
+    const bf=line.slice(0,cur.ch-ins.length);
+    const m=bf.match(/([a-zA-Z_.]+)$/);
+    if(!m) return;
+    const w=m[1], fix=TYPOS[w];
+    if(!fix) return;
+    const from={line:cur.line,ch:cur.ch-ins.length-w.length};
+    const to={line:cur.line,ch:cur.ch-ins.length};
+    cm.replaceRange(fix,from,to,'autocorrect');
+    addDebug(`Autocorrected: "${w}" → "${fix}"`,'info');
+}
+
+/* ============================================================
+   EDITOR
+   ============================================================ */
+loadFiles();
+
+editor=CodeMirror.fromTextArea(document.getElementById('codeArea'),{
+    mode:'python',lineNumbers:true,matchBrackets:true,autoCloseBrackets:true,
+    styleActiveLine:true,indentUnit:4,tabSize:4,indentWithTabs:false,lineWrapping:false,
+    foldGutter:true,gutters:['CodeMirror-linenumbers','CodeMirror-foldgutter'],
+    styleSelectedText:true,
+    extraKeys:{
+        'Ctrl-Enter':()=>runCode(),'Cmd-Enter':()=>runCode(),
+        'Ctrl-Shift-P':()=>openPal(),'Cmd-Shift-P':()=>openPal(),
+        'Ctrl-/':'toggleComment','Cmd-/':'toggleComment',
+        'Ctrl-Space':(cm)=>cm.showHint({hint:mathHint,completeSingle:false}),
+        'Tab':(cm)=>{if(cm.somethingSelected())cm.indentSelection('add');else cm.replaceSelection('    ','end');},
+        'Shift-Tab':(cm)=>cm.indentSelection('subtract'),
+        'Ctrl-S':()=>saveCurrent(),'Cmd-S':()=>saveCurrent(),
+        'Ctrl-F':()=>openFindBar(),'Cmd-F':()=>openFindBar(),
+        'Ctrl-H':()=>{openFindBar();showReplace();},'Cmd-H':()=>{openFindBar();showReplace();},
+        'Ctrl-G':()=>openGoto(),'Cmd-G':()=>openGoto(),
+        'Ctrl-D':(cm)=>selectNextOccurrence(cm),
+        'Ctrl-Shift-D':(cm)=>duplicateLine(cm),'Cmd-Shift-D':(cm)=>duplicateLine(cm),
+        'Alt-Up':(cm)=>moveLineUp(cm),
+        'Alt-Down':(cm)=>moveLineDown(cm),
+        'Ctrl-Shift-F':(cm)=>formatCode(),'Cmd-Shift-F':(cm)=>formatCode(),
+        'Ctrl-Shift-Z':()=>toggleZenMode(),'Cmd-Shift-Z':()=>toggleZenMode(),
+        'Enter':(cm)=>smartEnter(cm),
+    }
+});
+editor.setValue(files[activeFile]||'');
+editor.on('cursorActivity',()=>{
+    const p=editor.getCursor();
+    document.getElementById('sbCur').textContent=`Ln ${p.line+1}, Col ${p.ch+1}`;
+    removeParamHint();
+    updateBreadcrumbs();
+});
+editor.on('change',(cm,ch)=>{autocorrect(cm,ch);files[activeFile]=cm.getValue();saveFiles();scheduleLint();updateMinimap();updateWordCount();markDirty();});
+editor.on('inputRead',(cm,ch)=>{
+    if(ch.origin==='+input'&&/[a-zA-Z._]/.test(ch.text[0])){
+        cm.showHint({hint:mathHint,completeSingle:false});
+    }
+    // Show param hint when typing inside function parens
+    if(ch.origin==='+input' && ch.text[0]==='(') {
+        const cur=cm.getCursor();
+        const line=cm.getLine(cur.line);
+        const before=line.slice(0,cur.ch);
+        const funcMatch=before.match(/([a-zA-Z_.]+)\($/); 
+        if(funcMatch){
+            const doc=FUNC_DOCS[funcMatch[1]+'('];
+            if(doc) showParamHint(cm, doc);
+        }
+    }
+});
+
+/* ============================================================
+   FEATURE: AUTO-INDENT ON ENTER
+   ============================================================ */
+function smartEnter(cm) {
+    const cur = cm.getCursor();
+    const line = cm.getLine(cur.line);
+    const before = line.slice(0, cur.ch);
+    const trimmed = before.trimEnd();
+    const currentIndent = before.match(/^(\s*)/)[1];
+
+    // Keywords that open a block (line ends with :)
+    if (trimmed.endsWith(':')) {
+        cm.replaceSelection('\n' + currentIndent + '    ');
+        return;
+    }
+
+    // After opening bracket/paren/brace without close
+    const lastChar = trimmed.slice(-1);
+    if (['(', '[', '{'].includes(lastChar)) {
+        const after = line.slice(cur.ch).trim();
+        const closers = {'(':')', '[':']', '{':'}'};
+        if (after.startsWith(closers[lastChar])) {
+            // Between brackets: indent and place cursor between
+            cm.replaceSelection('\n' + currentIndent + '    ' + '\n' + currentIndent);
+            cm.setCursor(cur.line + 1, currentIndent.length + 4);
+            return;
+        }
+        cm.replaceSelection('\n' + currentIndent + '    ');
+        return;
+    }
+
+    // After return/break/continue/pass/raise → dedent
+    const kw = trimmed.match(/^\s*(return|break|continue|pass|raise)\b/);
+    if (kw && currentIndent.length >= 4) {
+        cm.replaceSelection('\n' + currentIndent.slice(4));
+        return;
+    }
+
+    // Continuation: line ends with \ or open parens/brackets not closed
+    if (trimmed.endsWith('\\')) {
+        cm.replaceSelection('\n' + currentIndent + '    ');
+        return;
+    }
+
+    // Default: maintain current indent
+    cm.replaceSelection('\n' + currentIndent);
+}
+
+function saveCurrent(){files[activeFile]=editor.getValue();saveFiles();addDebug('File saved.','info');}
+renderTabs(); renderFileList();
+
+/* ============================================================
+   PYODIDE
+   ============================================================ */
+async function initPyodide(){
+    try{
+        pyodide=await loadPyodide();
+        pyodide.runPython(`import sys\nfrom io import StringIO`);
+        document.getElementById('stDot').className='st-dot ready';
+        document.getElementById('stText').textContent='Ready';
+        document.getElementById('runBtn').disabled=false;
+        document.getElementById('loadOv').classList.add('hidden');
+        addDebug('Python runtime loaded.','info');
+    }catch(e){
+        document.getElementById('stDot').className='st-dot error';
+        document.getElementById('stText').textContent='Failed';
+        document.getElementById('loadOv').classList.add('hidden');
+        addDebug('Failed: '+e.message,'error');
+    }
+}
+initPyodide();
+
+/* ============================================================
+   RUN
+   ============================================================ */
+async function runCode(){
+    if(!pyodide||isRunning) return;
+    isRunning=true;
+    const btn=document.getElementById('runBtn');
+    btn.disabled=true; btn.textContent='⏳ Running...';
+    document.getElementById('sbErr').textContent='0';
+    document.getElementById('sbWarn').textContent='0';
+    clearOutput(); clearDebug();
+    addDebug('Executing...','info');
+
+    const code=editor.getValue(), t0=performance.now();
+    document.getElementById('sbTimer').style.display='flex';
+
+    try{
+        pyodide.runPython(`import sys\nfrom io import StringIO\nsys.stdout=StringIO()\nsys.stderr=StringIO()`);
+        await pyodide.runPythonAsync(code);
+        const out=pyodide.runPython('sys.stdout.getvalue()');
+        const err=pyodide.runPython('sys.stderr.getvalue()');
+        if(out) out.split('\n').forEach(l=>{if(l!=='')addResult(l,'stdout');});
+        if(err){err.split('\n').forEach(l=>{if(l!==''){addResult(l,'stderr');addDebug(l,'error');}});document.getElementById('sbErr').textContent=err.split('\n').filter(Boolean).length;}
+        const el=((performance.now()-t0)/1000).toFixed(2);
+        document.getElementById('sbTime').textContent=el+'s';
+        addResult(`\n✓ Completed in ${el}s`,'success');
+        addDebug(`Completed in ${el}s — no errors.`,'info');
+    }catch(e){
+        const ls=e.message.split('\n').filter(Boolean);
+        ls.forEach(l=>{addResult(l,'stderr');addDebug(l,'error');});
+        document.getElementById('sbErr').textContent='1';
+        const el=((performance.now()-t0)/1000).toFixed(2);
+        document.getElementById('sbTime').textContent=el+'s';
+    }finally{
+        pyodide.runPython(`sys.stdout=sys.__stdout__\nsys.stderr=sys.__stderr__`);
+        isRunning=false; btn.disabled=false;
+        btn.innerHTML=`<svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px"><polygon points="5 3 19 12 5 21 5 3"/></svg>&nbsp;Run`;
+    }
+}
+
+/* ============================================================
+   OUTPUT (right panel)
+   ============================================================ */
+function addResult(t,type='stdout'){
+    const b=document.getElementById('resBody');
+    const w=document.getElementById('resWelcome'); if(w) w.remove();
+    const d=document.createElement('div'); d.className='r-line '+type; d.textContent=t;
+    b.appendChild(d); outputLines++;
+    document.getElementById('outCount').textContent=outputLines;
+    b.scrollTop=b.scrollHeight;
+}
+function clearOutput(){document.getElementById('resBody').innerHTML='';outputLines=0;document.getElementById('outCount').textContent='0';}
+
+// Copy output button
+function copyOutput() {
+    const body = document.getElementById('resBody');
+    const lines = Array.from(body.querySelectorAll('.r-line')).map(el => el.textContent);
+    const text = lines.join('\n');
+    if (!text.trim()) { addDebug('Nothing to copy — output is empty.', 'warn'); return; }
+    navigator.clipboard.writeText(text).then(() => {
+        addDebug('Output copied to clipboard.', 'info');
+        // Visual feedback on the copy button
+        const btn = document.querySelector('[onclick="copyOutput()"]');
+        if (btn) {
+            btn.classList.add('copy-flash');
+            setTimeout(() => btn.classList.remove('copy-flash'), 800);
+        }
+    }).catch(() => {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        addDebug('Output copied to clipboard.', 'info');
+    });
+}
+
+/* ============================================================
+   DEBUG (bottom panel)
+   ============================================================ */
+function addDebug(t,type='info'){
+    const b=document.getElementById('debugBody');
+    const ts=new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const d=document.createElement('div'); d.className='d-line '+type;
+    // Check for line number in error messages for jump-to-error
+    const lineMatch = t.match(/line\s+(\d+)/i);
+    if (type === 'error' && lineMatch) {
+        const errLine = parseInt(lineMatch[1]);
+        d.classList.add('clickable-error');
+        d.title = 'Click to jump to line ' + errLine;
+        d.onclick = () => jumpToErrorLine(errLine);
+    }
+    d.innerHTML=`<span class="ts">[${ts}]</span> ${esc(t)}`;
+    b.appendChild(d); b.scrollTop=b.scrollHeight;
+}
+
+// Jump to error line and highlight it
+let errorLineMarker = null;
+function jumpToErrorLine(lineNum) {
+    const line = lineNum - 1; // 0-indexed
+    if (line < 0 || line >= editor.lineCount()) return;
+    editor.setCursor(line, 0);
+    editor.scrollIntoView({line: line, ch: 0}, 100);
+    editor.focus();
+    // Highlight the error line temporarily
+    if (errorLineMarker) errorLineMarker.clear();
+    errorLineMarker = editor.markText(
+        {line: line, ch: 0},
+        {line: line, ch: editor.getLine(line).length},
+        {className: 'error-line-highlight'}
+    );
+    setTimeout(() => { if (errorLineMarker) { errorLineMarker.clear(); errorLineMarker = null; } }, 3000);
+    // Also flash the gutter
+    editor.addLineClass(line, 'wrap', 'error-line-gutter');
+    setTimeout(() => editor.removeLineClass(line, 'wrap', 'error-line-gutter'), 3000);
+}
+function clearDebug(){document.getElementById('debugBody').innerHTML='';document.getElementById('consoleBody').innerHTML='';}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ============================================================
+   PANELS
+   ============================================================ */
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');document.getElementById('btnExp').classList.toggle('active');setTimeout(()=>{editor.refresh();saveLayout();},220);}
+function toggleRightPanel(){document.getElementById('rightPanel').classList.toggle('collapsed');setTimeout(()=>{editor.refresh();saveLayout();},220);}
+function toggleBottomPanel(){document.getElementById('botPanel').classList.toggle('collapsed');setTimeout(()=>{editor.refresh();saveLayout();},220);}
+function switchBTab(btn,panel){document.querySelectorAll('.b-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('debugBody').classList.toggle('hidden',panel!=='debug');document.getElementById('consoleBody').classList.toggle('hidden',panel!=='console');}
+
+/* Vertical resize */
+{const h=document.getElementById('vResize'),p=document.getElementById('botPanel');let r=false;
+h.addEventListener('mousedown',()=>{r=true;h.classList.add('active');document.body.style.cursor='ns-resize';document.body.style.userSelect='none';});
+document.addEventListener('mousemove',e=>{if(!r)return;const rect=document.querySelector('.center-col').getBoundingClientRect();p.style.height=Math.max(60,Math.min(500,rect.bottom-e.clientY))+'px';});
+document.addEventListener('mouseup',()=>{if(r){r=false;h.classList.remove('active');document.body.style.cursor='';document.body.style.userSelect='';editor.refresh();saveLayout();}});}
+
+/* Horizontal resize */
+{const h=document.getElementById('hResize'),p=document.getElementById('rightPanel');let r=false;
+h.addEventListener('mousedown',()=>{r=true;h.classList.add('active');document.body.style.cursor='col-resize';document.body.style.userSelect='none';});
+document.addEventListener('mousemove',e=>{if(!r)return;const rect=document.querySelector('.workspace').getBoundingClientRect();p.style.width=Math.max(200,Math.min(700,rect.right-e.clientX))+'px';});
+document.addEventListener('mouseup',()=>{if(r){r=false;h.classList.remove('active');document.body.style.cursor='';document.body.style.userSelect='';editor.refresh();saveLayout();}});}
+
+/* ============================================================
+   DROPDOWNS
+   ============================================================ */
+function toggleDD(id){closeDDs(id);document.getElementById(id).classList.toggle('open');}
+function closeDDs(x){document.querySelectorAll('.dd').forEach(d=>{if(d.id!==x)d.classList.remove('open');});}
+document.addEventListener('click',e=>{if(!e.target.closest('.dd')&&!e.target.closest('[onclick*="toggleDD"]'))closeDDs();});
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+let fontSize=14;
+function changeFontSize(d){fontSize=Math.max(10,Math.min(24,fontSize+d));document.querySelector('.CodeMirror').style.fontSize=fontSize+'px';editor.refresh();closeDDs();}
+function toggleWrap(){editor.setOption('lineWrapping',!editor.getOption('lineWrapping'));closeDDs();}
+function toggleLineNums(){editor.setOption('lineNumbers',!editor.getOption('lineNumbers'));editor.refresh();closeDDs();}
+function exportFile(){const b=new Blob([editor.getValue()],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=activeFile;a.click();closeDDs();}
+
+/* ============================================================
+   MATH TEMPLATE
+   ============================================================ */
+function insertMathTemplate(){
+    const t=`\n# ── Math Template ─────────────────────────\nimport math\n\n# Constants\npi = math.pi\ne  = math.e\nphi = (1 + math.sqrt(5)) / 2  # Golden ratio\n\n# Basic operations\nprint(f"√2    = {math.sqrt(2):.6f}")\nprint(f"2³    = {math.pow(2, 3):.0f}")\nprint(f"log₂8 = {math.log2(8):.0f}")\nprint(f"sin(π/4) = {math.sin(pi/4):.6f}")\nprint(f"10! = {math.factorial(10)}")\nprint(f"C(10,3) = {math.comb(10,3)}")\n`;
+    editor.replaceRange(t,editor.getCursor());
+}
+
+/* ============================================================
+   COMMAND PALETTE
+   ============================================================ */
+const cmds=[
+    {name:'Run Code',shortcut:'Ctrl+Enter',action:runCode},
+    {name:'New File',shortcut:'',action:newFile},
+    {name:'Save File',shortcut:'Ctrl+S',action:saveCurrent},
+    {name:'Download File',shortcut:'',action:exportFile},
+    {name:'Find & Replace',shortcut:'Ctrl+F',action:openFindBar},
+    {name:'Go to Line',shortcut:'Ctrl+G',action:openGoto},
+    {name:'Clear Output',shortcut:'',action:clearOutput},
+    {name:'Clear Debug Console',shortcut:'',action:clearDebug},
+    {name:'Toggle Explorer',shortcut:'',action:toggleSidebar},
+    {name:'Toggle Output Panel',shortcut:'',action:toggleRightPanel},
+    {name:'Toggle Problems',shortcut:'',action:toggleBottomPanel},
+    {name:'Toggle Minimap',shortcut:'',action:toggleMinimap},
+    {name:'Insert Math Template',shortcut:'',action:insertMathTemplate},
+    {name:'Increase Font Size',shortcut:'',action:()=>changeFontSize(1)},
+    {name:'Decrease Font Size',shortcut:'',action:()=>changeFontSize(-1)},
+    {name:'Toggle Word Wrap',shortcut:'',action:toggleWrap},
+    {name:'Fold All',shortcut:'',action:()=>editor.execCommand('foldAll')},
+    {name:'Unfold All',shortcut:'',action:()=>editor.execCommand('unfoldAll')},
+    {name:'Select All',shortcut:'Ctrl+A',action:()=>editor.execCommand('selectAll')},
+    {name:'Undo',shortcut:'Ctrl+Z',action:()=>editor.undo()},
+    {name:'Redo',shortcut:'Ctrl+Y',action:()=>editor.redo()},
+];
+function openPal(){document.getElementById('palOv').classList.add('open');const i=document.getElementById('palIn');i.value='';i.focus();renderPal(cmds);}
+function closePal(e){document.getElementById('palOv').classList.remove('open');}
+function renderPal(list){document.getElementById('palList').innerHTML=list.map((c,i)=>`<div class="pal-i${i===0?' active':''}" onclick="execCmd(${cmds.indexOf(c)})">${c.name}${c.shortcut?`<span class="sc">${c.shortcut}</span>`:''}</div>`).join('');}
+function filterPal(q){renderPal(cmds.filter(c=>c.name.toLowerCase().includes(q.toLowerCase())));}
+function execCmd(i){closePal();cmds[i].action();}
+
+/* ============================================================
+   KEYBOARD
+   ============================================================ */
+document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==='P'){e.preventDefault();openPal();}
+    if(e.key==='Escape')closePal();
+    if(e.key==='Enter'&&document.getElementById('palOv').classList.contains('open')){e.preventDefault();const a=document.querySelector('.pal-i.active');if(a)a.click();}
+    if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveCurrent();}
+});
+
+/* ============================================================
+   FEATURE 1: SPLIT EDITOR
+   ============================================================ */
+let splitOpen = false, editorRight = null, splitFile = '';
+
+function toggleSplitEditor() {
+    splitOpen = !splitOpen;
+    const rightWrap = document.getElementById('editorWrapRight');
+    const splitRes = document.getElementById('splitResize');
+    const container = document.getElementById('editorSplitContainer');
+
+    if (splitOpen) {
+        rightWrap.style.display = '';
+        splitRes.style.display = '';
+        container.classList.add('split-active');
+
+        if (!editorRight) {
+            editorRight = CodeMirror.fromTextArea(document.getElementById('codeAreaRight'), {
+                mode: 'python', lineNumbers: true, matchBrackets: true, autoCloseBrackets: true,
+                styleActiveLine: true, indentUnit: 4, tabSize: 4, indentWithTabs: false, lineWrapping: false,
+                foldGutter: true, gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+                styleSelectedText: true,
+                extraKeys: {
+                    'Ctrl-Enter': () => runCode(), 'Cmd-Enter': () => runCode(),
+                    'Ctrl-S': () => saveCurrent(), 'Cmd-S': () => saveCurrent(),
+                    'Tab': (cm) => { if (cm.somethingSelected()) cm.indentSelection('add'); else cm.replaceSelection('    ', 'end'); },
+                }
+            });
+            editorRight.on('change', () => {
+                if (splitFile && files.hasOwnProperty(splitFile)) {
+                    files[splitFile] = editorRight.getValue();
+                    saveFiles();
+                }
+                updateMinimapRight();
+            });
+            editorRight.on('cursorActivity', () => {
+                const p = editorRight.getCursor();
+                document.getElementById('sbCur').textContent = `Ln ${p.line + 1}, Col ${p.ch + 1} (split)`;
+            });
+        }
+
+        // Pick a different file for the right pane
+        const otherFiles = Object.keys(files).filter(f => f !== activeFile);
+        splitFile = otherFiles.length > 0 ? otherFiles[0] : activeFile;
+        editorRight.setValue(files[splitFile] || '');
+        editorRight.clearHistory();
+
+        // Show file picker dropdown for right pane
+        showSplitFilePicker();
+
+        setTimeout(() => { editor.refresh(); editorRight.refresh(); updateMinimapRight(); }, 100);
+    } else {
+        rightWrap.style.display = 'none';
+        splitRes.style.display = 'none';
+        container.classList.remove('split-active');
+        setTimeout(() => editor.refresh(), 100);
+    }
+}
+
+function showSplitFilePicker() {
+    // Add a simple file selector at the top of right pane
+    let picker = document.getElementById('splitFilePicker');
+    if (!picker) {
+        picker = document.createElement('select');
+        picker.id = 'splitFilePicker';
+        picker.className = 'split-file-picker';
+        picker.onchange = () => {
+            splitFile = picker.value;
+            editorRight.setValue(files[splitFile] || '');
+            editorRight.clearHistory();
+            updateMinimapRight();
+        };
+        document.getElementById('editorWrapRight').prepend(picker);
+    }
+    picker.innerHTML = Object.keys(files).map(f =>
+        `<option value="${f}" ${f === splitFile ? 'selected' : ''}>${f}</option>`
+    ).join('');
+}
+
+// Split resize
+{
+    const h = document.getElementById('splitResize');
+    let resizing = false;
+    h.addEventListener('mousedown', () => { resizing = true; h.classList.add('active'); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; });
+    document.addEventListener('mousemove', e => {
+        if (!resizing) return;
+        const container = document.getElementById('editorSplitContainer');
+        const rect = container.getBoundingClientRect();
+        const pct = ((e.clientX - rect.left) / rect.width) * 100;
+        const clamped = Math.max(20, Math.min(80, pct));
+        document.getElementById('editorWrapLeft').style.flex = `0 0 ${clamped}%`;
+        document.getElementById('editorWrapRight').style.flex = `0 0 ${100 - clamped}%`;
+    });
+    document.addEventListener('mouseup', () => {
+        if (resizing) {
+            resizing = false; h.classList.remove('active');
+            document.body.style.cursor = ''; document.body.style.userSelect = '';
+            editor.refresh(); if (editorRight) editorRight.refresh();
+        }
+    });
+}
+
+/* ============================================================
+   FEATURE 2: MINIMAP (enhanced)
+   ============================================================ */
+let minimapVisible = true;
+
+function toggleMinimap() {
+    minimapVisible = !minimapVisible;
+    document.querySelectorAll('.minimap').forEach(m => m.style.display = minimapVisible ? '' : 'none');
+}
+
+function updateMinimap() {
+    renderMinimapFor(editor, document.getElementById('minimapCanvas'), document.getElementById('minimapViewport'), document.getElementById('minimap'));
+}
+
+function updateMinimapRight() {
+    if (!editorRight) return;
+    renderMinimapFor(editorRight, document.getElementById('minimapCanvasRight'), document.getElementById('minimapViewportRight'), document.getElementById('minimapRight'));
+}
+
+function renderMinimapFor(ed, canvas, viewport, container) {
+    if (!canvas || !minimapVisible) return;
+    const code = ed.getValue();
+    const lines = code.split('\n');
+    const lineH = 2;
+    const charW = 1.2;
+    const maxChars = 80;
+    const h = Math.max(lines.length * lineH, 100);
+    canvas.width = 100;
+    canvas.height = h;
+    canvas.style.height = h + 'px';
+
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Color mapping for syntax
+    const kwColor = getComputedStyle(document.documentElement).getPropertyValue('--grape').trim() || '#7B2D8E';
+
+    lines.forEach((line, i) => {
+        const y = i * lineH;
+        for (let j = 0; j < Math.min(line.length, maxChars); j++) {
+            const ch = line[j];
+            if (ch === ' ' || ch === '\t') continue;
+            if (ch === '#') { ctx.fillStyle = '#9B94A8'; ctx.fillRect(j * charW, y, charW, lineH); break; }
+            else if (/[a-zA-Z_]/.test(ch)) ctx.fillStyle = 'rgba(45,38,64,0.35)';
+            else if (/[0-9]/.test(ch)) ctx.fillStyle = 'rgba(230,126,34,0.4)';
+            else if (ch === '"' || ch === "'") ctx.fillStyle = 'rgba(39,174,96,0.4)';
+            else ctx.fillStyle = 'rgba(45,38,64,0.2)';
+            ctx.fillRect(j * charW, y, charW, lineH);
+        }
+    });
+
+    // Viewport indicator
+    const info = ed.getScrollInfo();
+    const totalLines = ed.lineCount();
+    const topLine = ed.lineAtHeight(info.top, 'local');
+    const botLine = ed.lineAtHeight(info.top + info.clientHeight, 'local');
+    const vpTop = (topLine / Math.max(totalLines, 1)) * h;
+    const vpH = Math.max(((botLine - topLine) / Math.max(totalLines, 1)) * h, 20);
+    viewport.style.top = vpTop + 'px';
+    viewport.style.height = vpH + 'px';
+
+    // Click to scroll
+    container.onclick = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickY = e.clientY - rect.top;
+        const targetLine = Math.floor((clickY / h) * totalLines);
+        ed.scrollIntoView({ line: targetLine, ch: 0 }, 100);
+    };
+}
+
+editor.on('scroll', updateMinimap);
+setTimeout(updateMinimap, 500);
+
+/* ============================================================
+   FEATURE 3: SNIPPET SYSTEM
+   ============================================================ */
+const SNIPPET_KEY = 'chocolatepy_snippets';
+let snippets = [], editingSnippetIdx = -1;
+
+function loadSnippets() {
+    try {
+        const data = localStorage.getItem(SNIPPET_KEY);
+        if (data) snippets = JSON.parse(data);
+    } catch (e) { snippets = []; }
+    if (!snippets.length) {
+        snippets = [
+            { name: 'For Loop', shortcut: 'forloop', code: 'for i in range(n):\n    pass' },
+            { name: 'Function', shortcut: 'deffunc', code: 'def function_name(args):\n    \"\"\"Docstring\"\"\"\n    pass' },
+            { name: 'Class', shortcut: 'defclass', code: 'class ClassName:\n    def __init__(self):\n        pass' },
+            { name: 'Try/Except', shortcut: 'tryex', code: 'try:\n    pass\nexcept Exception as e:\n    print(f"Error: {e}")' },
+            { name: 'List Comprehension', shortcut: 'listcomp', code: 'result = [x for x in iterable if condition]' },
+            { name: 'Read File', shortcut: 'readfile', code: 'with open("filename.txt", "r") as f:\n    content = f.read()' },
+        ];
+        saveSnippetsData();
+    }
+}
+
+function saveSnippetsData() { localStorage.setItem(SNIPPET_KEY, JSON.stringify(snippets)); }
+
+function openSnippetManager() {
+    document.getElementById('snippetOv').classList.add('open');
+    renderSnippetList();
+}
+
+function closeSnippetManager(e) { document.getElementById('snippetOv').classList.remove('open'); }
+
+function renderSnippetList() {
+    const list = document.getElementById('snippetList');
+    list.innerHTML = snippets.map((s, i) =>
+        `<div class="snippet-item ${i === editingSnippetIdx ? 'active' : ''}" onclick="editSnippet(${i})">
+            <div class="snippet-item-name">${esc(s.name)}</div>
+            <div class="snippet-item-shortcut">${esc(s.shortcut)}</div>
+        </div>`
+    ).join('');
+}
+
+function editSnippet(idx) {
+    editingSnippetIdx = idx;
+    const s = snippets[idx];
+    document.getElementById('snippetName').value = s.name;
+    document.getElementById('snippetShortcut').value = s.shortcut;
+    document.getElementById('snippetCode').value = s.code;
+    document.getElementById('snippetForm').style.display = '';
+    document.getElementById('snippetEmpty').style.display = 'none';
+    renderSnippetList();
+}
+
+function newSnippet() {
+    snippets.push({ name: 'New Snippet', shortcut: 'new', code: '# Your code here' });
+    saveSnippetsData();
+    editSnippet(snippets.length - 1);
+}
+
+function saveSnippet() {
+    if (editingSnippetIdx < 0) return;
+    snippets[editingSnippetIdx] = {
+        name: document.getElementById('snippetName').value || 'Untitled',
+        shortcut: document.getElementById('snippetShortcut').value || '',
+        code: document.getElementById('snippetCode').value || '',
+    };
+    saveSnippetsData();
+    renderSnippetList();
+    addDebug('Snippet saved: ' + snippets[editingSnippetIdx].name, 'info');
+}
+
+function deleteSnippet() {
+    if (editingSnippetIdx < 0) return;
+    snippets.splice(editingSnippetIdx, 1);
+    editingSnippetIdx = -1;
+    saveSnippetsData();
+    document.getElementById('snippetForm').style.display = 'none';
+    document.getElementById('snippetEmpty').style.display = '';
+    renderSnippetList();
+}
+
+function insertSnippetIntoEditor() {
+    if (editingSnippetIdx < 0) return;
+    const code = snippets[editingSnippetIdx].code;
+    editor.replaceRange(code, editor.getCursor());
+    closeSnippetManager();
+    editor.focus();
+}
+
+function exportSnippets() {
+    const blob = new Blob([JSON.stringify(snippets, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'chocolatepy-snippets.json';
+    a.click();
+}
+
+function importSnippets(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const imported = JSON.parse(ev.target.result);
+            if (Array.isArray(imported)) {
+                snippets = imported;
+                saveSnippetsData();
+                renderSnippetList();
+                addDebug(`Imported ${imported.length} snippets.`, 'info');
+            }
+        } catch (err) { addDebug('Failed to import snippets: ' + err.message, 'error'); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+}
+
+// Snippet trigger in editor: type shortcut then Tab to expand
+editor.on('inputRead', function snippetTrigger(cm, change) {
+    if (change.origin !== '+input' || change.text[0] !== '\t') return;
+    // Handled separately below
+});
+
+// Override Tab to check for snippet expansion first
+const origTab = editor.getOption('extraKeys')['Tab'];
+editor.setOption('extraKeys', Object.assign({}, editor.getOption('extraKeys'), {
+    'Tab': function(cm) {
+        const cur = cm.getCursor();
+        const line = cm.getLine(cur.line);
+        const before = line.slice(0, cur.ch);
+        const wordMatch = before.match(/(\S+)$/);
+        if (wordMatch) {
+            const word = wordMatch[1];
+            const snip = snippets.find(s => s.shortcut === word);
+            if (snip) {
+                const from = { line: cur.line, ch: cur.ch - word.length };
+                cm.replaceRange(snip.code, from, cur);
+                addDebug(`Snippet expanded: ${snip.name}`, 'info');
+                return;
+            }
+        }
+        if (cm.somethingSelected()) cm.indentSelection('add');
+        else cm.replaceSelection('    ', 'end');
+    }
+}));
+
+loadSnippets();
+
+/* ============================================================
+   FEATURE 4: VARIABLE INSPECTOR
+   ============================================================ */
+let varInspectorOpen = false;
+
+function toggleVarInspector() {
+    varInspectorOpen = !varInspectorOpen;
+    document.getElementById('varInspector').style.display = varInspectorOpen ? '' : 'none';
+    setTimeout(() => editor.refresh(), 100);
+}
+
+async function captureVariables() {
+    if (!pyodide) return;
+    try {
+        const inspectCode = `
+import json as _json_, sys as _sys_
+_vars_ = {}
+for _name_, _val_ in dict(globals()).items():
+    if _name_.startswith('_') or _name_ in ('In','Out','get_ipython','exit','quit','__builtins__'):
+        continue
+    if callable(_val_) and not isinstance(_val_, (list, dict, tuple, set, int, float, str, bool, complex)):
+        if hasattr(_val_, '__module__') and _val_.__module__ != '__main__':
+            continue
+        _vars_[_name_] = {'type': 'function', 'value': f'function({", ".join(_val_.__code__.co_varnames[:_val_.__code__.co_argcount])})' if hasattr(_val_,'__code__') else 'function'}
+        continue
+    if isinstance(_val_, type(_sys_)):
+        continue
+    try:
+        _repr_ = repr(_val_)
+        if len(_repr_) > 200:
+            _repr_ = _repr_[:200] + '...'
+        _vars_[_name_] = {'type': type(_val_).__name__, 'value': _repr_}
+    except:
+        pass
+_json_.dumps(_vars_)
+`;
+        const result = pyodide.runPython(inspectCode);
+        const vars = JSON.parse(result);
+        renderVarInspector(vars);
+    } catch (e) {
+        // silently fail - variables might not be available
+    }
+}
+
+function renderVarInspector(vars) {
+    const body = document.getElementById('varBody');
+    const entries = Object.entries(vars);
+    if (!entries.length) {
+        body.innerHTML = '<div class="var-empty">No variables found</div>';
+        return;
+    }
+    let html = '<table class="var-table"><thead><tr><th>Name</th><th>Type</th><th>Value</th></tr></thead><tbody>';
+    entries.forEach(([name, info]) => {
+        const typeClass = 'var-type-' + info.type;
+        html += `<tr><td class="var-name">${esc(name)}</td><td class="var-type ${typeClass}">${esc(info.type)}</td><td class="var-value">${esc(info.value)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    body.innerHTML = html;
+}
+
+// Hook into runCode to capture variables after execution
+const origRunCode = runCode;
+runCode = async function() {
+    await origRunCode();
+    await captureVariables();
+};
+
+/* ============================================================
+   FEATURE 5: THEME EDITOR
+   ============================================================ */
+const THEME_KEY = 'chocolatepy_theme';
+const THEME_PRESETS = [
+    {
+        name: 'Grape (Default)',
+        colors: {
+            '--grape': '#7B2D8E', '--grape-dark': '#5E1F6E', '--grape-deeper': '#4A1858',
+            '--bg': '#FFFFFF', '--bg-side': '#F8F6FB', '--bg-title': '#4A1858',
+            '--text': '#2D2640', '--text-2': '#635A74', '--text-3': '#9B94A8',
+            '--border': '#E5E1EC', '--ok': '#2ECC71', '--err': '#E74C3C',
+        }
+    },
+    {
+        name: 'Dark Cocoa',
+        colors: {
+            '--grape': '#BB86FC', '--grape-dark': '#9B59B6', '--grape-deeper': '#1E1E2E',
+            '--bg': '#1E1E2E', '--bg-side': '#252538', '--bg-title': '#161625',
+            '--text': '#E0DEE6', '--text-2': '#A9A5B3', '--text-3': '#6C6880',
+            '--border': '#3E3A50', '--ok': '#2ECC71', '--err': '#E74C3C',
+        }
+    },
+    {
+        name: 'Ocean Blue',
+        colors: {
+            '--grape': '#2196F3', '--grape-dark': '#1565C0', '--grape-deeper': '#0D3B66',
+            '--bg': '#FFFFFF', '--bg-side': '#F0F4FA', '--bg-title': '#0D3B66',
+            '--text': '#1A2A3A', '--text-2': '#4A6A8A', '--text-3': '#8A9AB0',
+            '--border': '#D0DCE8', '--ok': '#2ECC71', '--err': '#E74C3C',
+        }
+    },
+    {
+        name: 'Forest Green',
+        colors: {
+            '--grape': '#27AE60', '--grape-dark': '#1E8449', '--grape-deeper': '#145A32',
+            '--bg': '#FFFFFF', '--bg-side': '#F0FAF4', '--bg-title': '#145A32',
+            '--text': '#1A3A2A', '--text-2': '#4A7A5A', '--text-3': '#8AB09A',
+            '--border': '#D0E8DC', '--ok': '#2ECC71', '--err': '#E74C3C',
+        }
+    },
+    {
+        name: 'Midnight',
+        colors: {
+            '--grape': '#FF6B9D', '--grape-dark': '#C0456A', '--grape-deeper': '#1A1A2E',
+            '--bg': '#16213E', '--bg-side': '#1A1A2E', '--bg-title': '#0F0F23',
+            '--text': '#E0E0F0', '--text-2': '#A0A0C0', '--text-3': '#606080',
+            '--border': '#2A2A4E', '--ok': '#2ECC71', '--err': '#E74C3C',
+        }
+    },
+    {
+        name: 'Warm Mocha',
+        colors: {
+            '--grape': '#D4A574', '--grape-dark': '#A67C52', '--grape-deeper': '#3E2723',
+            '--bg': '#FFF8F0', '--bg-side': '#FAF0E6', '--bg-title': '#3E2723',
+            '--text': '#3E2723', '--text-2': '#6D4C41', '--text-3': '#A1887F',
+            '--border': '#D7CCC8', '--ok': '#66BB6A', '--err': '#EF5350',
+        }
+    },
+];
+
+let activeThemeColors = {};
+
+const EDITABLE_COLORS = [
+    { key: '--grape', label: 'Primary Accent' },
+    { key: '--grape-dark', label: 'Accent Dark' },
+    { key: '--bg', label: 'Background' },
+    { key: '--bg-side', label: 'Sidebar BG' },
+    { key: '--bg-title', label: 'Title Bar BG' },
+    { key: '--text', label: 'Text Primary' },
+    { key: '--text-2', label: 'Text Secondary' },
+    { key: '--text-3', label: 'Text Muted' },
+    { key: '--border', label: 'Border' },
+    { key: '--ok', label: 'Success' },
+    { key: '--err', label: 'Error' },
+];
+
+function openThemeEditor() {
+    document.getElementById('themeOv').classList.add('open');
+    // Load current colors
+    const root = document.documentElement;
+    activeThemeColors = {};
+    EDITABLE_COLORS.forEach(c => {
+        activeThemeColors[c.key] = getComputedStyle(root).getPropertyValue(c.key).trim();
+    });
+    renderThemePresets();
+    renderThemeColorGrid();
+    updateThemePreview();
+}
+
+function closeThemeEditor(e) { document.getElementById('themeOv').classList.remove('open'); }
+
+function renderThemePresets() {
+    const list = document.getElementById('themePresetList');
+    list.innerHTML = THEME_PRESETS.map((p, i) =>
+        `<div class="theme-preset-item" onclick="applyPreset(${i})">
+            <div class="theme-preset-swatch" style="background:${p.colors['--grape']}"></div>
+            <span>${p.name}</span>
+        </div>`
+    ).join('');
+}
+
+function renderThemeColorGrid() {
+    const grid = document.getElementById('themeColorGrid');
+    grid.innerHTML = EDITABLE_COLORS.map(c =>
+        `<div class="theme-color-item">
+            <label>${c.label}</label>
+            <div class="theme-color-input-wrap">
+                <input type="color" value="${activeThemeColors[c.key] || '#7B2D8E'}" onchange="setThemeColor('${c.key}', this.value)" class="theme-color-input">
+                <input type="text" value="${activeThemeColors[c.key] || '#7B2D8E'}" onchange="setThemeColor('${c.key}', this.value)" class="theme-color-hex">
+            </div>
+        </div>`
+    ).join('');
+}
+
+function setThemeColor(key, value) {
+    activeThemeColors[key] = value;
+    document.documentElement.style.setProperty(key, value);
+    // Also update derived colors
+    if (key === '--grape') {
+        document.documentElement.style.setProperty('--grape-light', lightenColor(value, 30));
+        document.documentElement.style.setProperty('--grape-soft', lightenColor(value, 50));
+        document.documentElement.style.setProperty('--grape-faint', lightenColor(value, 90));
+        document.documentElement.style.setProperty('--grape-glow', value + '12');
+        document.documentElement.style.setProperty('--grape-hover', value + '1C');
+        document.documentElement.style.setProperty('--grape-ring', value + '40');
+    }
+    if (key === '--bg') {
+        document.documentElement.style.setProperty('--bg-tab', value);
+        document.documentElement.style.setProperty('--bg-input', value);
+        document.documentElement.style.setProperty('--bg-panel', lightenColor(value, 2));
+    }
+    if (key === '--bg-title') {
+        document.documentElement.style.setProperty('--grape-deep', value);
+        document.documentElement.style.setProperty('--grape-darker', lightenColor(value, 10));
+    }
+    renderThemeColorGrid();
+    updateThemePreview();
+    saveTheme();
+}
+
+function lightenColor(hex, percent) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    let r = parseInt(hex.substring(0, 2), 16);
+    let g = parseInt(hex.substring(2, 4), 16);
+    let b = parseInt(hex.substring(4, 6), 16);
+    r = Math.min(255, Math.floor(r + (255 - r) * percent / 100));
+    g = Math.min(255, Math.floor(g + (255 - g) * percent / 100));
+    b = Math.min(255, Math.floor(b + (255 - b) * percent / 100));
+    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+function applyPreset(idx) {
+    const preset = THEME_PRESETS[idx];
+    Object.entries(preset.colors).forEach(([key, value]) => {
+        activeThemeColors[key] = value;
+        document.documentElement.style.setProperty(key, value);
+    });
+    // Update derived
+    setThemeColor('--grape', preset.colors['--grape']);
+    setThemeColor('--bg', preset.colors['--bg']);
+    setThemeColor('--bg-title', preset.colors['--bg-title']);
+    document.getElementById('themeName').value = preset.name;
+    renderThemeColorGrid();
+    updateThemePreview();
+    saveTheme();
+}
+
+function updateThemePreview() {
+    const box = document.getElementById('themePreviewBox');
+    const g = activeThemeColors['--grape'] || '#7B2D8E';
+    const bg = activeThemeColors['--bg'] || '#FFFFFF';
+    const title = activeThemeColors['--bg-title'] || '#4A1858';
+    const text = activeThemeColors['--text'] || '#2D2640';
+    const text3 = activeThemeColors['--text-3'] || '#9B94A8';
+    box.querySelector('.tp-titlebar').style.background = title;
+    box.querySelector('.tp-topbar').style.background = lightenColor(bg, -5);
+    box.querySelector('.tp-topbar').style.color = text;
+    box.querySelector('.tp-editor').style.background = bg;
+    box.querySelector('.tp-editor').style.color = text;
+    box.querySelectorAll('.tp-kw').forEach(el => el.style.color = g);
+    box.querySelectorAll('.tp-str').forEach(el => el.style.color = activeThemeColors['--ok'] || '#27AE60');
+    box.querySelector('.tp-statusbar').style.background = title;
+}
+
+function saveTheme() {
+    localStorage.setItem(THEME_KEY, JSON.stringify({
+        name: document.getElementById('themeName')?.value || 'Custom',
+        colors: activeThemeColors
+    }));
+}
+
+function loadTheme() {
+    try {
+        const data = localStorage.getItem(THEME_KEY);
+        if (data) {
+            const theme = JSON.parse(data);
+            if (theme.colors) {
+                Object.entries(theme.colors).forEach(([key, value]) => {
+                    document.documentElement.style.setProperty(key, value);
+                });
+                activeThemeColors = theme.colors;
+                // Update derived colors
+                if (theme.colors['--grape']) {
+                    const g = theme.colors['--grape'];
+                    document.documentElement.style.setProperty('--grape-light', lightenColor(g, 30));
+                    document.documentElement.style.setProperty('--grape-soft', lightenColor(g, 50));
+                    document.documentElement.style.setProperty('--grape-faint', lightenColor(g, 90));
+                }
+            }
+        }
+    } catch (e) { /* ignore */ }
+}
+
+function resetTheme() {
+    localStorage.removeItem(THEME_KEY);
+    EDITABLE_COLORS.forEach(c => document.documentElement.style.removeProperty(c.key));
+    // Reset all derived properties too
+    ['--grape-light','--grape-soft','--grape-faint','--grape-glow','--grape-hover','--grape-ring',
+     '--grape-deep','--grape-darker','--bg-tab','--bg-input','--bg-panel'].forEach(k =>
+        document.documentElement.style.removeProperty(k)
+    );
+    activeThemeColors = {};
+    renderThemeColorGrid();
+    updateThemePreview();
+    addDebug('Theme reset to defaults.', 'info');
+}
+
+function exportTheme() {
+    const theme = {
+        name: document.getElementById('themeName')?.value || 'Custom Theme',
+        colors: activeThemeColors,
+    };
+    const blob = new Blob([JSON.stringify(theme, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'chocolatepy-theme.json';
+    a.click();
+}
+
+function importTheme(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const theme = JSON.parse(ev.target.result);
+            if (theme.colors) {
+                Object.entries(theme.colors).forEach(([key, value]) => {
+                    activeThemeColors[key] = value;
+                    document.documentElement.style.setProperty(key, value);
+                });
+                if (theme.colors['--grape']) setThemeColor('--grape', theme.colors['--grape']);
+                if (theme.colors['--bg']) setThemeColor('--bg', theme.colors['--bg']);
+                if (theme.colors['--bg-title']) setThemeColor('--bg-title', theme.colors['--bg-title']);
+                renderThemeColorGrid();
+                updateThemePreview();
+                saveTheme();
+                addDebug('Theme imported: ' + (theme.name || 'Custom'), 'info');
+            }
+        } catch (err) { addDebug('Failed to import theme: ' + err.message, 'error'); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+}
+
+// Load saved theme on startup
+loadTheme();
+
+/* ============================================================
+   FEATURE: REMEMBER PANEL SIZES & LAYOUT
+   ============================================================ */
+const LAYOUT_KEY = 'chocolatepy_layout';
+
+function saveLayout() {
+    const layout = {
+        sidebarCollapsed: document.getElementById('sidebar').classList.contains('collapsed'),
+        rightCollapsed: document.getElementById('rightPanel').classList.contains('collapsed'),
+        bottomCollapsed: document.getElementById('botPanel').classList.contains('collapsed'),
+        rightWidth: document.getElementById('rightPanel').style.width || '',
+        bottomHeight: document.getElementById('botPanel').style.height || '',
+        sidebarWidth: document.getElementById('sidebar').style.width || '',
+        fontSize: fontSize,
+        wordWrap: editor.getOption('lineWrapping'),
+        lineNumbers: editor.getOption('lineNumbers'),
+        minimapVisible: minimapVisible,
+    };
+    localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+}
+
+function loadLayout() {
+    try {
+        const data = localStorage.getItem(LAYOUT_KEY);
+        if (!data) return;
+        const layout = JSON.parse(data);
+
+        if (layout.sidebarCollapsed) {
+            document.getElementById('sidebar').classList.add('collapsed');
+            document.getElementById('btnExp').classList.remove('active');
+        }
+        if (layout.rightCollapsed) document.getElementById('rightPanel').classList.add('collapsed');
+        if (layout.bottomCollapsed) document.getElementById('botPanel').classList.add('collapsed');
+        if (layout.rightWidth) document.getElementById('rightPanel').style.width = layout.rightWidth;
+        if (layout.bottomHeight) document.getElementById('botPanel').style.height = layout.bottomHeight;
+        if (layout.sidebarWidth) document.getElementById('sidebar').style.width = layout.sidebarWidth;
+        if (layout.fontSize && layout.fontSize !== 14) {
+            fontSize = layout.fontSize;
+            document.querySelector('.CodeMirror').style.fontSize = fontSize + 'px';
+        }
+        if (layout.wordWrap) editor.setOption('lineWrapping', true);
+        if (layout.lineNumbers === false) editor.setOption('lineNumbers', false);
+        if (layout.minimapVisible === false) { minimapVisible = false; toggleMinimap(); toggleMinimap(); minimapVisible = false; document.querySelectorAll('.minimap').forEach(m => m.style.display = 'none'); }
+
+        setTimeout(() => editor.refresh(), 250);
+    } catch (e) { /* ignore */ }
+}
+
+loadLayout();
+
+/* ============================================================
+   UPDATE COMMAND PALETTE WITH NEW COMMANDS
+   ============================================================ */
+cmds.push(
+    { name: 'Toggle Split Editor', shortcut: '', action: toggleSplitEditor },
+    { name: 'Open Snippet Manager', shortcut: '', action: openSnippetManager },
+    { name: 'Toggle Variable Inspector', shortcut: '', action: toggleVarInspector },
+    { name: 'Open Theme Editor', shortcut: '', action: openThemeEditor },
+    { name: 'Reset Theme', shortcut: '', action: resetTheme },
+    { name: 'Copy Output', shortcut: '', action: copyOutput },
+);
+
+/* ============================================================
+   RENAME FILE (was referenced but missing)
+   ============================================================ */
+function startRename(el, oldName) {
+    const nameEl = el.querySelector('.fi-name');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = oldName;
+    input.className = 'rename-input';
+    input.onclick = (e) => e.stopPropagation();
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') { finishRename(oldName, input.value); }
+        if (e.key === 'Escape') { renderFileList(); }
+    };
+    input.onblur = () => { finishRename(oldName, input.value); };
+    nameEl.replaceWith(input);
+    input.select();
+}
+
+function finishRename(oldName, newName) {
+    newName = newName.trim();
+    if (!newName || newName === oldName) { renderFileList(); return; }
+    if (files[newName]) { addDebug('File already exists: ' + newName, 'error'); renderFileList(); return; }
+    files[newName] = files[oldName];
+    delete files[oldName];
+    if (activeFile === oldName) activeFile = newName;
+    saveFiles(); renderTabs(); renderFileList();
+    document.getElementById('titleFile').textContent = activeFile;
+}
+
+function reorderFile(dragName, dropName) {
+    const keys = Object.keys(files);
+    const dragIdx = keys.indexOf(dragName);
+    const dropIdx = keys.indexOf(dropName);
+    if (dragIdx < 0 || dropIdx < 0 || dragIdx === dropIdx) return;
+    keys.splice(dragIdx, 1);
+    keys.splice(dropIdx, 0, dragName);
+    const newFiles = {};
+    keys.forEach(k => newFiles[k] = files[k]);
+    Object.keys(files).forEach(k => delete files[k]);
+    Object.assign(files, newFiles);
+    saveFiles(); renderTabs(); renderFileList();
+}
+
+/* ============================================================
+   FIND BAR (was referenced but partly missing)
+   ============================================================ */
+let findCursor = null;
+function openFindBar() {
+    document.getElementById('findBar').classList.remove('hidden');
+    document.getElementById('findIn').focus();
+}
+function closeFindBar() {
+    document.getElementById('findBar').classList.add('hidden');
+    if (findCursor) findCursor = null;
+}
+function showReplace() {
+    document.getElementById('replaceRow').classList.remove('hidden');
+}
+function toggleReplace() {
+    document.getElementById('replaceRow').classList.toggle('hidden');
+}
+function doFind() {
+    const q = document.getElementById('findIn').value;
+    if (!q) { document.getElementById('findCount').textContent = '0 results'; return; }
+    const cursor = editor.getSearchCursor(q, { line: 0, ch: 0 }, { caseFold: true });
+    let count = 0;
+    while (cursor.findNext()) count++;
+    document.getElementById('findCount').textContent = count + ' results';
+    findCursor = editor.getSearchCursor(q, editor.getCursor(), { caseFold: true });
+    doFindNext();
+}
+function doFindNext() {
+    const q = document.getElementById('findIn').value;
+    if (!q) return;
+    if (!findCursor) findCursor = editor.getSearchCursor(q, editor.getCursor(), { caseFold: true });
+    if (findCursor.findNext()) {
+        editor.setSelection(findCursor.from(), findCursor.to());
+        editor.scrollIntoView({ from: findCursor.from(), to: findCursor.to() }, 50);
+    } else {
+        findCursor = editor.getSearchCursor(q, { line: 0, ch: 0 }, { caseFold: true });
+        if (findCursor.findNext()) {
+            editor.setSelection(findCursor.from(), findCursor.to());
+            editor.scrollIntoView({ from: findCursor.from(), to: findCursor.to() }, 50);
+        }
+    }
+}
+function doFindPrev() {
+    const q = document.getElementById('findIn').value;
+    if (!q) return;
+    if (!findCursor) findCursor = editor.getSearchCursor(q, editor.getCursor(), { caseFold: true });
+    if (findCursor.findPrevious()) {
+        editor.setSelection(findCursor.from(), findCursor.to());
+    }
+}
+function doReplaceOne() {
+    const q = document.getElementById('findIn').value;
+    const r = document.getElementById('replaceIn').value;
+    if (!q) return;
+    if (findCursor && findCursor.from() && findCursor.to()) {
+        findCursor.replace(r);
+        doFindNext();
+    } else { doFindNext(); }
+}
+function doReplaceAll() {
+    const q = document.getElementById('findIn').value;
+    const r = document.getElementById('replaceIn').value;
+    if (!q) return;
+    const cursor = editor.getSearchCursor(q, { line: 0, ch: 0 }, { caseFold: true });
+    let count = 0;
+    while (cursor.findNext()) { cursor.replace(r); count++; }
+    document.getElementById('findCount').textContent = count + ' replaced';
+}
+
+function selectNextOccurrence(cm) {
+    const sel = cm.getSelection();
+    if (!sel) {
+        const w = cm.findWordAt(cm.getCursor());
+        cm.setSelection(w.anchor, w.head);
+        return;
+    }
+    const cursor = cm.getSearchCursor(sel, cm.getCursor());
+    if (cursor.findNext()) {
+        cm.addSelection(cursor.from(), cursor.to());
+    }
+}
+
+function openGoto() {
+    document.getElementById('gotoOv').style.display = 'flex';
+    document.getElementById('gotoIn').value = '';
+    document.getElementById('gotoIn').focus();
+}
+function closeGoto() { document.getElementById('gotoOv').style.display = 'none'; }
+function doGoto() {
+    const n = parseInt(document.getElementById('gotoIn').value);
+    if (n > 0) { editor.setCursor(n - 1, 0); editor.scrollIntoView(null, 100); editor.focus(); }
+    closeGoto();
+}
+
+/* ============================================================
+   LINTING
+   ============================================================ */
+let lintTimer = null;
+function scheduleLint() {
+    clearTimeout(lintTimer);
+    lintTimer = setTimeout(runLint, 800);
+}
+function runLint() {
+    // Basic Python lint checks
+    const code = editor.getValue();
+    const lines = code.split('\n');
+    let warnings = 0;
+    lines.forEach((line, i) => {
+        if (line.length > 120) warnings++;
+        if (/\t/.test(line) && /    /.test(code)) warnings++; // mixed indentation
+    });
+    document.getElementById('sbWarn').textContent = warnings;
+}
+
+/* ============================================================
+   FEATURE: DUPLICATE LINE (Ctrl+Shift+D)
+   ============================================================ */
+function duplicateLine(cm) {
+    if (cm.somethingSelected()) {
+        const sel = cm.getSelection();
+        const to = cm.getCursor('to');
+        cm.replaceRange(sel, to, to);
+    } else {
+        const cur = cm.getCursor();
+        const line = cm.getLine(cur.line);
+        cm.replaceRange('\n' + line, { line: cur.line, ch: line.length });
+        cm.setCursor(cur.line + 1, cur.ch);
+    }
+}
+
+/* ============================================================
+   FEATURE: MOVE LINE UP/DOWN (Alt+Up / Alt+Down)
+   ============================================================ */
+function moveLineUp(cm) {
+    const cur = cm.getCursor();
+    if (cur.line === 0) return;
+    const line = cm.getLine(cur.line);
+    const above = cm.getLine(cur.line - 1);
+    cm.replaceRange(line + '\n' + above,
+        { line: cur.line - 1, ch: 0 },
+        { line: cur.line, ch: line.length }
+    );
+    cm.setCursor(cur.line - 1, cur.ch);
+}
+
+function moveLineDown(cm) {
+    const cur = cm.getCursor();
+    if (cur.line >= cm.lineCount() - 1) return;
+    const line = cm.getLine(cur.line);
+    const below = cm.getLine(cur.line + 1);
+    cm.replaceRange(below + '\n' + line,
+        { line: cur.line, ch: 0 },
+        { line: cur.line + 1, ch: below.length }
+    );
+    cm.setCursor(cur.line + 1, cur.ch);
+}
+
+/* ============================================================
+   FEATURE: INDENT GUIDES
+   ============================================================ */
+let indentGuidesEnabled = true;
+let indentGuideOverlay = null;
+
+function makeIndentGuideOverlay() {
+    return {
+        token: function(stream) {
+            if (stream.sol()) {
+                let spaces = 0;
+                while (stream.peek() === ' ') { stream.next(); spaces++; }
+                if (spaces > 0 && spaces % 4 === 0) return 'indent-guide';
+                if (spaces > 0) return null;
+            }
+            stream.skipToEnd();
+            return null;
+        }
+    };
+}
+
+function toggleIndentGuides() {
+    indentGuidesEnabled = !indentGuidesEnabled;
+    if (indentGuidesEnabled) {
+        indentGuideOverlay = makeIndentGuideOverlay();
+        editor.addOverlay(indentGuideOverlay);
+    } else {
+        if (indentGuideOverlay) editor.removeOverlay(indentGuideOverlay);
+    }
+    addDebug('Indent guides ' + (indentGuidesEnabled ? 'enabled' : 'disabled'), 'info');
+}
+
+// Enable indent guides on startup
+indentGuideOverlay = makeIndentGuideOverlay();
+editor.addOverlay(indentGuideOverlay);
+
+/* ============================================================
+   FEATURE: WORD / CHARACTER COUNT IN STATUS BAR
+   ============================================================ */
+function updateWordCount() {
+    const code = editor.getValue();
+    const chars = code.length;
+    const words = code.trim() ? code.trim().split(/\s+/).length : 0;
+    const lines = editor.lineCount();
+    document.getElementById('sbWordCount').textContent = `${words} words, ${chars} chars, ${lines} lines`;
+}
+setTimeout(updateWordCount, 300);
+
+/* ============================================================
+   FEATURE: AUTO-SAVE INDICATOR
+   ============================================================ */
+let isDirty = false;
+let autoSaveTimer = null;
+
+function markDirty() {
+    isDirty = true;
+    // Show dot on active tab
+    const tabs = document.querySelectorAll('.tab.active .dot');
+    tabs.forEach(d => d.classList.add('modified'));
+    // Show auto-save indicator
+    const el = document.getElementById('sbAutoSave');
+    el.style.display = 'flex';
+    document.getElementById('sbAutoSaveText').textContent = 'Modified';
+    document.querySelector('.autosave-dot').className = 'autosave-dot dirty';
+    // Auto-save after 2 seconds of inactivity
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+        files[activeFile] = editor.getValue();
+        saveFiles();
+        isDirty = false;
+        document.getElementById('sbAutoSaveText').textContent = 'Saved';
+        document.querySelector('.autosave-dot').className = 'autosave-dot saved';
+        tabs.forEach(d => d.classList.remove('modified'));
+        setTimeout(() => { document.getElementById('sbAutoSave').style.display = 'none'; }, 2000);
+    }, 2000);
+}
+
+/* ============================================================
+   FEATURE: KEYBOARD SHORTCUTS PANEL
+   ============================================================ */
+function openShortcuts() {
+    document.getElementById('shortcutsOv').classList.add('open');
+}
+function closeShortcuts(e) {
+    document.getElementById('shortcutsOv').classList.remove('open');
+}
+
+/* ============================================================
+   FEATURE: EXECUTION HISTORY
+   ============================================================ */
+const HISTORY_KEY = 'chocolatepy_history';
+let execHistory = [];
+let selectedHistoryIdx = -1;
+
+function loadHistory2() {
+    try { execHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { execHistory = []; }
+}
+function saveHistory2() {
+    // Keep max 50 entries
+    if (execHistory.length > 50) execHistory = execHistory.slice(-50);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(execHistory));
+}
+
+function addToHistory(code) {
+    const ts = new Date().toLocaleString();
+    execHistory.push({ code, timestamp: ts, file: activeFile });
+    saveHistory2();
+}
+
+function openHistoryPanel() {
+    document.getElementById('historyOv').classList.add('open');
+    renderHistoryList();
+}
+function closeHistory(e) {
+    document.getElementById('historyOv').classList.remove('open');
+}
+function clearHistory() {
+    execHistory = [];
+    saveHistory2();
+    renderHistoryList();
+    document.getElementById('historyCode').style.display = 'none';
+    document.getElementById('historyActions').style.display = 'none';
+    document.getElementById('historyEmpty').style.display = '';
+}
+
+function renderHistoryList() {
+    const list = document.getElementById('historyList');
+    if (!execHistory.length) {
+        list.innerHTML = '<div class="var-empty">No execution history yet</div>';
+        return;
+    }
+    list.innerHTML = execHistory.slice().reverse().map((h, i) => {
+        const realIdx = execHistory.length - 1 - i;
+        const preview = h.code.split('\n')[0].slice(0, 50);
+        return `<div class="snippet-item ${realIdx === selectedHistoryIdx ? 'active' : ''}" onclick="selectHistory(${realIdx})">
+            <div class="snippet-item-name">${esc(preview)}</div>
+            <div class="snippet-item-shortcut">${esc(h.timestamp)} — ${esc(h.file)}</div>
+        </div>`;
+    }).join('');
+}
+
+function selectHistory(idx) {
+    selectedHistoryIdx = idx;
+    const h = execHistory[idx];
+    document.getElementById('historyCode').textContent = h.code;
+    document.getElementById('historyCode').style.display = '';
+    document.getElementById('historyActions').style.display = 'flex';
+    document.getElementById('historyEmpty').style.display = 'none';
+    renderHistoryList();
+}
+
+function rerunHistory() {
+    if (selectedHistoryIdx < 0) return;
+    const code = execHistory[selectedHistoryIdx].code;
+    editor.setValue(code);
+    closeHistory();
+    setTimeout(runCode, 100);
+}
+
+function loadHistory() {
+    if (selectedHistoryIdx < 0) return;
+    editor.setValue(execHistory[selectedHistoryIdx].code);
+    closeHistory();
+    editor.focus();
+}
+
+loadHistory2();
+
+// Hook execution history into runCode
+const _origRunCode2 = runCode;
+runCode = async function() {
+    addToHistory(editor.getValue());
+    await _origRunCode2();
+};
+
+/* ============================================================
+   FEATURE: CODE FORMATTING (basic Python formatter)
+   ============================================================ */
+function formatCode() {
+    const code = editor.getValue();
+    const lines = code.split('\n');
+    const formatted = [];
+    let indentLevel = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        let trimmed = line.trim();
+
+        // Skip empty lines
+        if (!trimmed) { formatted.push(''); continue; }
+
+        // Dedent for these keywords
+        if (/^(elif |else:|except |except:|finally:|except\s)/.test(trimmed)) {
+            indentLevel = Math.max(0, indentLevel - 1);
+        }
+        // Dedent for closing brackets alone on a line
+        if (/^[)\]\}]/.test(trimmed)) {
+            indentLevel = Math.max(0, indentLevel - 1);
+        }
+
+        // Apply indent
+        formatted.push('    '.repeat(indentLevel) + trimmed);
+
+        // Increase indent after block openers
+        if (trimmed.endsWith(':') && /^(def |class |if |elif |else:|for |while |try:|except |except:|finally:|with |async )/.test(trimmed)) {
+            indentLevel++;
+        }
+        // Increase indent after opening brackets at end
+        if (/[({\[]\s*$/.test(trimmed) && !trimmed.endsWith(':')) {
+            indentLevel++;
+        }
+        // Decrease indent after return/break/continue/pass/raise
+        if (/^(return|break|continue|pass|raise)\b/.test(trimmed)) {
+            indentLevel = Math.max(0, indentLevel - 1);
+        }
+    }
+
+    // Fix spacing around operators
+    let result = formatted.join('\n');
+    // Ensure blank line before def/class at top level
+    result = result.replace(/(\S)\n(def |class )/g, '$1\n\n$2');
+    // Remove trailing whitespace
+    result = result.split('\n').map(l => l.trimEnd()).join('\n');
+    // Remove excessive blank lines (max 2)
+    result = result.replace(/\n{4,}/g, '\n\n\n');
+
+    const cursor = editor.getCursor();
+    editor.setValue(result);
+    editor.setCursor(Math.min(cursor.line, editor.lineCount() - 1), cursor.ch);
+    addDebug('Code formatted.', 'info');
+}
+
+/* ============================================================
+   FEATURE: ZEN MODE (distraction-free)
+   ============================================================ */
+let zenMode = false;
+let zenEditor = null;
+
+function toggleZenMode() {
+    zenMode = !zenMode;
+    const overlay = document.getElementById('zenOverlay');
+
+    if (zenMode) {
+        overlay.style.display = 'flex';
+        if (!zenEditor) {
+            zenEditor = CodeMirror(document.getElementById('zenEditor'), {
+                mode: 'python', lineNumbers: true, matchBrackets: true, autoCloseBrackets: true,
+                styleActiveLine: true, indentUnit: 4, tabSize: 4, indentWithTabs: false,
+                lineWrapping: true,
+                foldGutter: true, gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+                styleSelectedText: true,
+                extraKeys: {
+                    'Ctrl-Enter': () => runCode(), 'Cmd-Enter': () => runCode(),
+                    'Ctrl-S': () => { files[activeFile] = zenEditor.getValue(); saveFiles(); addDebug('Saved.', 'info'); },
+                    'Ctrl-Shift-Z': () => toggleZenMode(), 'Cmd-Shift-Z': () => toggleZenMode(),
+                    'Escape': () => toggleZenMode(),
+                    'Tab': (cm) => { if (cm.somethingSelected()) cm.indentSelection('add'); else cm.replaceSelection('    ', 'end'); },
+                    'Enter': (cm) => smartEnter(cm),
+                }
+            });
+            zenEditor.on('change', () => {
+                files[activeFile] = zenEditor.getValue();
+                saveFiles();
+            });
+        }
+        zenEditor.setValue(editor.getValue());
+        zenEditor.setCursor(editor.getCursor());
+        setTimeout(() => { zenEditor.refresh(); zenEditor.focus(); }, 100);
+        // Fade out hint after 3s
+        const hint = document.getElementById('zenExitHint');
+        hint.style.opacity = '1';
+        setTimeout(() => { hint.style.opacity = '0'; }, 3000);
+    } else {
+        if (zenEditor) editor.setValue(zenEditor.getValue());
+        overlay.style.display = 'none';
+        setTimeout(() => editor.focus(), 100);
+    }
+}
+
+/* ============================================================
+   FEATURE: RAINBOW BRACKET COLORS
+   ============================================================ */
+let bracketMarkers = [];
+const BRACKET_COLORS = ['#E74C3C', '#E67E22', '#F1C40F', '#2ECC71', '#3498DB', '#9B59B6'];
+
+function updateRainbowBrackets() {
+    // Clear old markers
+    bracketMarkers.forEach(m => m.clear());
+    bracketMarkers = [];
+    
+    const code = editor.getValue();
+    const lines = code.split('\n');
+    let depth = 0;
+    
+    lines.forEach((line, lineIdx) => {
+        for (let ch = 0; ch < line.length; ch++) {
+            const c = line[ch];
+            if (c === '(' || c === '[' || c === '{') {
+                const color = BRACKET_COLORS[depth % BRACKET_COLORS.length];
+                const marker = editor.markText(
+                    { line: lineIdx, ch: ch },
+                    { line: lineIdx, ch: ch + 1 },
+                    { css: `color: ${color}; font-weight: 600` }
+                );
+                bracketMarkers.push(marker);
+                depth++;
+            } else if (c === ')' || c === ']' || c === '}') {
+                depth = Math.max(0, depth - 1);
+                const color = BRACKET_COLORS[depth % BRACKET_COLORS.length];
+                const marker = editor.markText(
+                    { line: lineIdx, ch: ch },
+                    { line: lineIdx, ch: ch + 1 },
+                    { css: `color: ${color}; font-weight: 600` }
+                );
+                bracketMarkers.push(marker);
+            }
+        }
+    });
+}
+
+// Debounced rainbow brackets
+let rainbowTimer = null;
+function scheduleRainbow() {
+    clearTimeout(rainbowTimer);
+    rainbowTimer = setTimeout(updateRainbowBrackets, 300);
+}
+editor.on('change', scheduleRainbow);
+setTimeout(updateRainbowBrackets, 600);
+
+/* ============================================================
+   FEATURE: WELCOME / ONBOARDING
+   ============================================================ */
+function showWelcome() {
+    if (localStorage.getItem('chocolatepy_no_welcome') === '1') return;
+    document.getElementById('welcomeOverlay').style.display = 'flex';
+}
+function closeWelcome() {
+    document.getElementById('welcomeOverlay').style.display = 'none';
+    if (document.getElementById('welcomeNoShow').checked) {
+        localStorage.setItem('chocolatepy_no_welcome', '1');
+    }
+}
+setTimeout(showWelcome, 800);
+
+/* ============================================================
+   FEATURE: TOAST NOTIFICATIONS
+   ============================================================ */
+function showToast(message, type='info', duration=3000) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    const icons = { info: 'ℹ️', success: '✅', error: '❌', warn: '⚠️' };
+    toast.innerHTML = `<span class="toast-icon">${icons[type] || icons.info}</span><span class="toast-msg">${message}</span><button class="toast-close" onclick="this.parentElement.remove()">&times;</button>`;
+    container.appendChild(toast);
+    // Animate in
+    requestAnimationFrame(() => toast.classList.add('toast-show'));
+    setTimeout(() => {
+        toast.classList.remove('toast-show');
+        toast.classList.add('toast-hide');
+        setTimeout(() => toast.remove(), 400);
+    }, duration);
+}
+
+// Hook toasts into key events
+const _origSaveCurrent = saveCurrent;
+saveCurrent = function() { _origSaveCurrent(); showToast('File saved', 'success', 2000); };
+
+/* ============================================================
+   FEATURE: IMPORT .PY FILES (drag & drop + button)
+   ============================================================ */
+function importFiles(event) {
+    const fileList = event.target.files;
+    if (!fileList.length) return;
+    Array.from(fileList).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const name = file.name;
+            files[name] = e.target.result;
+            switchFile(name);
+            showToast(`Imported: ${name}`, 'success');
+        };
+        reader.readAsText(file);
+    });
+    event.target.value = '';
+}
+
+// Enable drag & drop on the entire workspace
+document.querySelector('.workspace').addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    document.querySelector('.workspace').classList.add('drop-active');
+});
+document.querySelector('.workspace').addEventListener('dragleave', () => {
+    document.querySelector('.workspace').classList.remove('drop-active');
+});
+document.querySelector('.workspace').addEventListener('drop', (e) => {
+    e.preventDefault();
+    document.querySelector('.workspace').classList.remove('drop-active');
+    const droppedFiles = e.dataTransfer.files;
+    if (!droppedFiles.length) return;
+    Array.from(droppedFiles).forEach(file => {
+        if (!file.name.match(/\.(py|txt|json|csv|md)$/i)) {
+            showToast(`Unsupported file type: ${file.name}`, 'warn');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            files[file.name] = ev.target.result;
+            switchFile(file.name);
+            showToast(`Imported: ${file.name}`, 'success');
+        };
+        reader.readAsText(file);
+    });
+});
+
+/* ============================================================
+   FEATURE: BREADCRUMBS (file > class > function)
+   ============================================================ */
+function updateBreadcrumbs() {
+    const cur = editor.getCursor();
+    const code = editor.getValue();
+    const lines = code.split('\n');
+    let bc = [activeFile];
+    let currentClass = '';
+    let currentFunc = '';
+    
+    for (let i = 0; i <= cur.line && i < lines.length; i++) {
+        const line = lines[i];
+        const classMatch = line.match(/^class\s+([a-zA-Z_]\w*)/);
+        const funcMatch = line.match(/^(\s*)def\s+([a-zA-Z_]\w*)/);
+        
+        if (classMatch) {
+            currentClass = classMatch[1];
+            currentFunc = '';
+        }
+        if (funcMatch) {
+            currentFunc = funcMatch[2];
+            if (funcMatch[1].length === 0) currentClass = ''; // top-level function resets class
+        }
+    }
+    
+    if (currentClass) bc.push(currentClass);
+    if (currentFunc) bc.push(currentFunc + '()');
+    
+    document.getElementById('breadcrumbs').innerHTML = bc.map((b, i) =>
+        `<span class="bc-item">${esc(b)}</span>${i < bc.length - 1 ? '<span class="bc-sep">›</span>' : ''}`
+    ).join('');
+}
+
+/* ============================================================
+   FEATURE: ABOUT / LEGAL MODAL
+   ============================================================ */
+function openAbout() {
+    document.getElementById('aboutOv').classList.add('open');
+    closeDDs();
+}
+function closeAbout(e) {
+    document.getElementById('aboutOv').classList.remove('open');
+}
+function openLegal(tab) {
+    openAbout();
+    const tabs = document.querySelectorAll('.about-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.about-content').forEach(c => c.style.display = 'none');
+    if (tab === 'tos') {
+        tabs[1].classList.add('active');
+        document.getElementById('tosContent').style.display = '';
+    } else if (tab === 'privacy') {
+        tabs[2].classList.add('active');
+        document.getElementById('privacyContent').style.display = '';
+    }
+    closeDDs();
+}
+function switchAboutTab(btn, contentId) {
+    document.querySelectorAll('.about-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.about-content').forEach(c => c.style.display = 'none');
+    btn.classList.add('active');
+    document.getElementById(contentId).style.display = '';
+}
+
+/* ============================================================
+   FEATURE: TAB SIZE SETTING
+   ============================================================ */
+let tabSize = 4;
+function cycleTabSize() {
+    tabSize = tabSize === 4 ? 2 : 4;
+    editor.setOption('indentUnit', tabSize);
+    editor.setOption('tabSize', tabSize);
+    document.getElementById('tabSizeLabel').textContent = tabSize;
+    showToast(`Tab size: ${tabSize} spaces`, 'info', 2000);
+    closeDDs();
+}
+
+/* ============================================================
+   FEATURE: PRINT / EXPORT CODE & OUTPUT
+   ============================================================ */
+function printCode() {
+    const code = editor.getValue();
+    const w = window.open('', '_blank');
+    w.document.write(`<html><head><title>${activeFile} — ChocolatePy</title>
+    <style>body{font-family:'JetBrains Mono',monospace;font-size:13px;padding:40px;white-space:pre-wrap;line-height:1.6;}
+    h1{font-family:Inter,sans-serif;font-size:16px;color:#7B2D8E;margin-bottom:4px;}
+    .meta{font-size:11px;color:#999;margin-bottom:20px;}
+    @media print{body{padding:20px;}}</style></head>
+    <body><h1>ChocolatePy v1.0 — ${esc(activeFile)}</h1>
+    <div class="meta">Printed on ${new Date().toLocaleString()}</div>
+    <pre>${esc(code)}</pre></body></html>`);
+    w.document.close();
+    w.print();
+    closeDDs();
+}
+
+function printOutput() {
+    const body = document.getElementById('resBody');
+    const lines = Array.from(body.querySelectorAll('.r-line')).map(el => el.textContent);
+    const text = lines.join('\n');
+    if (!text.trim()) { showToast('No output to print', 'warn'); return; }
+    const w = window.open('', '_blank');
+    w.document.write(`<html><head><title>Output — ChocolatePy</title>
+    <style>body{font-family:'JetBrains Mono',monospace;font-size:13px;padding:40px;white-space:pre-wrap;line-height:1.6;}
+    h1{font-family:Inter,sans-serif;font-size:16px;color:#7B2D8E;margin-bottom:4px;}
+    .meta{font-size:11px;color:#999;margin-bottom:20px;}
+    @media print{body{padding:20px;}}</style></head>
+    <body><h1>ChocolatePy v1.0 — Output from ${esc(activeFile)}</h1>
+    <div class="meta">Printed on ${new Date().toLocaleString()}</div>
+    <pre>${esc(text)}</pre></body></html>`);
+    w.document.close();
+    w.print();
+}
+
+/* ============================================================
+   FEATURE: FULLSCREEN OUTPUT
+   ============================================================ */
+let fullscreenOutput = false;
+function toggleFullscreenOutput() {
+    fullscreenOutput = !fullscreenOutput;
+    const rp = document.getElementById('rightPanel');
+    if (fullscreenOutput) {
+        rp.classList.add('fullscreen-output');
+    } else {
+        rp.classList.remove('fullscreen-output');
+    }
+}
+
+/* ============================================================
+   FEATURE: COLLAPSIBLE SIDEBAR SECTIONS
+   ============================================================ */
+function toggleSideSection(hdr) {
+    const section = hdr.parentElement;
+    section.classList.toggle('collapsed-section');
+}
+
+/* ============================================================
+   FEATURE: FILE TYPE ICONS
+   ============================================================ */
+function getFileIcon(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const icons = {
+        py: '<svg viewBox="0 0 24 24" fill="none" style="width:14px;height:14px"><rect x="3" y="3" width="18" height="18" rx="3" fill="#3776AB" opacity="0.15"/><text x="7" y="17" font-size="11" font-weight="700" fill="#3776AB" font-family="Inter,sans-serif">Py</text></svg>',
+        txt: '<svg viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" style="width:14px;height:14px"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="7" y1="13" x2="17" y2="13"/><line x1="7" y1="17" x2="13" y2="17"/></svg>',
+        json: '<svg viewBox="0 0 24 24" fill="none" style="width:14px;height:14px"><rect x="3" y="3" width="18" height="18" rx="3" fill="#F1C40F" opacity="0.15"/><text x="5" y="17" font-size="9" font-weight="700" fill="#D4A017" font-family="Inter,sans-serif">{ }</text></svg>',
+        csv: '<svg viewBox="0 0 24 24" fill="none" style="width:14px;height:14px"><rect x="3" y="3" width="18" height="18" rx="3" fill="#27AE60" opacity="0.15"/><text x="4" y="16" font-size="9" font-weight="700" fill="#27AE60" font-family="Inter,sans-serif">CSV</text></svg>',
+        md: '<svg viewBox="0 0 24 24" fill="none" style="width:14px;height:14px"><rect x="3" y="3" width="18" height="18" rx="3" fill="#2196F3" opacity="0.15"/><text x="4" y="16" font-size="9" font-weight="700" fill="#2196F3" font-family="Inter,sans-serif">MD</text></svg>',
+    };
+    return icons[ext] || '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>';
+}
+
+/* ============================================================
+   FEATURE: FOCUS MODE INDICATOR
+   ============================================================ */
+function initFocusIndicator() {
+    const panels = ['.editor-wrap', '.right-panel', '.bottom-panel', '.sidebar'];
+    panels.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+            el.addEventListener('mousedown', () => {
+                document.querySelectorAll('.panel-focused').forEach(p => p.classList.remove('panel-focused'));
+                el.classList.add('panel-focused');
+            });
+        });
+    });
+    // Editor focus via CodeMirror
+    editor.on('focus', () => {
+        document.querySelectorAll('.panel-focused').forEach(p => p.classList.remove('panel-focused'));
+        document.getElementById('editorWrapLeft').classList.add('panel-focused');
+    });
+}
+initFocusIndicator();
+
+/* ============================================================
+   UPDATE COMMAND PALETTE WITH ALL NEW COMMANDS
+   ============================================================ */
+cmds.push(
+    { name: 'Duplicate Line', shortcut: 'Ctrl+Shift+D', action: () => duplicateLine(editor) },
+    { name: 'Move Line Up', shortcut: 'Alt+Up', action: () => moveLineUp(editor) },
+    { name: 'Move Line Down', shortcut: 'Alt+Down', action: () => moveLineDown(editor) },
+    { name: 'Format Code', shortcut: 'Ctrl+Shift+F', action: formatCode },
+    { name: 'Toggle Zen Mode', shortcut: 'Ctrl+Shift+Z', action: toggleZenMode },
+    { name: 'Toggle Indent Guides', shortcut: '', action: toggleIndentGuides },
+    { name: 'Keyboard Shortcuts', shortcut: '', action: openShortcuts },
+    { name: 'Execution History', shortcut: '', action: openHistoryPanel },
+    { name: 'Import File', shortcut: '', action: () => document.getElementById('importFileInput').click() },
+    { name: 'Print Code', shortcut: '', action: printCode },
+    { name: 'Fullscreen Output', shortcut: '', action: toggleFullscreenOutput },
+    { name: 'About ChocolatePy', shortcut: '', action: openAbout },
+    { name: 'Terms of Service', shortcut: '', action: () => openLegal('tos') },
+    { name: 'Privacy Policy', shortcut: '', action: () => openLegal('privacy') },
+    { name: 'Toggle Tab Size (2/4)', shortcut: '', action: cycleTabSize },
+);
+
+/* ============================================================
+   INIT
+   ============================================================ */
+setTimeout(()=>{editor.refresh();editor.focus();updateMinimap();updateWordCount();},150);
+window.addEventListener('beforeunload',()=>{files[activeFile]=editor.getValue();saveFiles();});
+
+/* ============================================================
+   PWA / CHROMEBOOK APP: Service Worker Registration
+   ============================================================ */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js', { scope: './' })
+            .then((reg) => {
+                console.log('[PWA] Service Worker registered, scope:', reg.scope);
+                
+                // Check for updates periodically
+                setInterval(() => reg.update(), 60 * 60 * 1000); // hourly
+                
+                // Handle updates
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showToast('Update available! Refresh to get the latest version.', 'info', 8000);
+                        }
+                    });
+                });
+            })
+            .catch((err) => console.warn('[PWA] SW registration failed:', err));
+    });
+}
+
+// PWA Install prompt handling
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    
+    // Show install button in the app
+    const installBtn = document.getElementById('pwaInstallBtn');
+    const installDiv = document.getElementById('pwaInstallDiv');
+    if (installBtn) { installBtn.style.display = 'flex'; }
+    if (installDiv) { installDiv.style.display = ''; }
+});
+
+function installPWA() {
+    if (!deferredInstallPrompt) {
+        showToast('App is already installed or install is not available', 'info');
+        return;
+    }
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then((result) => {
+        if (result.outcome === 'accepted') {
+            showToast('ChocolatePy installed! Find it in your app launcher.', 'success', 5000);
+        }
+        deferredInstallPrompt = null;
+        const installBtn = document.getElementById('pwaInstallBtn');
+        const installDiv = document.getElementById('pwaInstallDiv');
+        if (installBtn) installBtn.style.display = 'none';
+        if (installDiv) installDiv.style.display = 'none';
+    });
+}
+
+window.addEventListener('appinstalled', () => {
+    showToast('ChocolatePy has been installed!', 'success');
+    deferredInstallPrompt = null;
+});
+</script>
+</body>
+</html>
